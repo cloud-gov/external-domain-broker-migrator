@@ -3,7 +3,7 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-built_image_name="external-domain-broker-dev"
+built_image_name="external-domain-broker-migrator-dev"
 
 main() {
   [[ $# -eq 0 ]] && usage "Expected command."

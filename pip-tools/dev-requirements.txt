@@ -7,13 +7,18 @@
 appdirs==1.4.3            # via black
 attrs==19.3.0             # via black, pytest
 black==19.10b0            # via -r pip-tools/dev-requirements.in
+cfenv==0.5.3              # via -r pip-tools/../requirements.txt
 click==7.1.1              # via black, pip-tools
 colorama==0.4.3           # via pytest-watch
 docopt==0.6.2             # via pytest-watch
+environs==8.0.0           # via -r pip-tools/../requirements.txt
 flake8==3.8.2             # via -r pip-tools/dev-requirements.in
+furl==2.1.0               # via -r pip-tools/../requirements.txt, cfenv
 gprof2dot==2019.11.30     # via pytest-profiling
+marshmallow==3.7.1        # via -r pip-tools/../requirements.txt, environs
 mccabe==0.6.1             # via flake8
 more-itertools==8.2.0     # via pytest
+orderedmultidict==1.0.1   # via -r pip-tools/../requirements.txt, furl
 packaging==20.3           # via pytest
 pathspec==0.8.0           # via black
 pathtools==0.1.2          # via watchdog
@@ -26,8 +31,9 @@ pyparsing==2.4.7          # via packaging
 pytest-profiling==1.7.0   # via -r pip-tools/dev-requirements.in
 pytest-watch==4.2.0       # via -r pip-tools/dev-requirements.in
 pytest==5.4.1             # via -r pip-tools/dev-requirements.in, pytest-profiling, pytest-watch
+python-dotenv==0.14.0     # via -r pip-tools/../requirements.txt, environs
 regex==2020.5.7           # via black
-six==1.15.0               # via packaging, pip-tools, pytest-profiling
+six==1.15.0               # via -r pip-tools/../requirements.txt, furl, orderedmultidict, packaging, pip-tools, pytest-profiling
 toml==0.10.0              # via black
 typed-ast==1.4.1          # via black
 watchdog==0.10.2          # via pytest-watch
