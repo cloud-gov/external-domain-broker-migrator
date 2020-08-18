@@ -75,10 +75,11 @@ RUN initdb \
   && echo "log_line_prefix = ''" >> "$PGCONFIG" \
   && sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" "$PGCONFIG" \
   && grep -F "listen_addresses = '*'" "$PGCONFIG" \
-  && echo 'CREATE DATABASE "test"' | postgres --single -D "$PGDATA" postgres \
-  && echo 'CREATE DATABASE "local-development"' | postgres --single -D "$PGDATA" postgres  
+  && echo 'CREATE DATABASE "local-development-cdn"' | postgres --single -D "$PGDATA" postgres \
+  && echo 'CREATE DATABASE "local-development-external-domain"' | postgres --single -D "$PGDATA" postgres  
 
 COPY . .
+
 
 ENV PATH=/usr/local/bin:$PATH
 ENV FLASK_APP="broker.app:create_app()"
