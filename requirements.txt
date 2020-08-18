@@ -4,3 +4,10 @@
 #
 #    ./dev update-requirements
 #
+cfenv==0.5.3              # via -r pip-tools/requirements.in
+environs==8.0.0           # via -r pip-tools/requirements.in
+furl==2.1.0               # via cfenv
+marshmallow==3.7.1        # via environs
+orderedmultidict==1.0.1   # via furl
+python-dotenv==0.14.0     # via environs
+six==1.15.0               # via furl
