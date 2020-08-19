@@ -1,3 +1,4 @@
+from cfenv import AppEnv
 from environs import Env
 
 
@@ -15,6 +16,7 @@ def config_from_env():
 class Config:
     def __init__(self):
         self.env_parser = Env()
+        self.cf_env_parser = AppEnv()
         self.ENV = self.env_parser("ENV")
 
 
@@ -23,18 +25,26 @@ class LocalConfig(Config):
         super().__init__()
         self.TESTING = True
         self.DEBUG = True
+        self.CDN_BROKER_DATABASE_URI = "postgresql://localhost/local-development-cdn"
 
 
-class DevelopmentConfig(Config):
+class AppConfig(Config):
+    def __init__(self):
+        super().__init__()
+        cdn_db = self.cf_env_parser.get_service(name="rds-cdn-broker")
+        self.CDN_BROKER_DATABASE_URI = cdn_db.credentials["uri"]
+
+
+class DevelopmentConfig(AppConfig):
     def __init__(self):
         super().__init__()
 
 
-class StagingConfig(Config):
+class StagingConfig(AppConfig):
     def __init__(self):
         super().__init__()
 
 
-class ProductionConfig(Config):
+class ProductionConfig(AppConfig):
     def __init__(self):
         super().__init__()
