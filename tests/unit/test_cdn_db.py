@@ -1,6 +1,9 @@
 import pytest
+import sqlalchemy as sa
+from sqlalchemy import orm
 from migrator import db
 from migrator import models
+from migrator import extensions
 
 
 def test_can_get_session():
@@ -27,3 +30,12 @@ def test_can_create_route():
     session.delete(route)
     session.commit()
     session.close()
+
+
+def test_check_connections():
+    engine = sa.create_engine("postgresql://invalid.local")
+    Session = orm.sessionmaker(bind=engine)
+    with pytest.raises(Exception):
+        db.check_connections(cdn_session_maker=Session)
+
+    db.check_connections()
