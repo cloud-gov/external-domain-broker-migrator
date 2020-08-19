@@ -1,0 +1,53 @@
+---
+jobs:
+
+- name: reconfigure
+  serial: true
+  plan:
+  - get: src
+    params: {depth: 1}
+    trigger: true
+  - get: secrets
+    # Remember to manually trigger a new build if you upload a new version
+    # of the credentials file.
+    trigger: false
+  - set_pipeline: ((name))
+    file: src/ci/pipeline.yml
+    var_files:
+    - secrets/((name)).yml
+
+############################
+#  RESOURCES
+
+resources:
+
+- name: secrets
+  type: s3-iam
+  icon: cloud-lock
+  source:
+    region_name: ((concourse-varz-bucket-region))
+    bucket: ((concourse-varz-bucket))
+    versioned_file: ((name)).yml
+
+- name: src
+  type: git
+  icon: github-circle
+  check_every: 10s
+  source:
+    uri: https://github.com/cloud-gov/((name))
+    branch: ((git-branch))
+
+############################
+#  RESOURCE TYPES
+
+resource_types:
+
+- name: s3-iam
+  type: docker-image
+  source:
+    repository: 18fgsa/s3-resource
+
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
