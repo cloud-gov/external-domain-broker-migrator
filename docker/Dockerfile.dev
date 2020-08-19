@@ -82,8 +82,7 @@ COPY . .
 
 
 ENV PATH=/usr/local/bin:$PATH
-ENV FLASK_APP="broker.app:create_app()"
-ENV FLASK_ENV=local-development
+ENV ENV=local
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt

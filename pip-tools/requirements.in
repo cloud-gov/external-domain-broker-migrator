@@ -1,2 +1,4 @@
 cfenv
 environs
+sqlalchemy
+psycopg2
