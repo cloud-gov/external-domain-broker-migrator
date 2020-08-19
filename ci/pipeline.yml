@@ -16,6 +16,32 @@ jobs:
     var_files:
     - secrets/((name)).yml
 
+- name: test
+  plan:
+  - get: src
+    params: {depth: 1}
+    trigger: true
+    passed: [reconfigure]
+
+  - put: dev-docker-image
+    # We push this docker image _only_ so that we can use it in the next task
+    # below.  :shrug: concourse.
+    params:
+      build: src
+      dockerfile: src/docker/Dockerfile.dev
+      tag_as_latest: true
+      cache: true
+
+  - task: test
+    # Run the tests using the image pushed above.
+    image: dev-docker-image
+    config:
+      platform: linux
+      params:
+        TMPDIR: /tmp
+      run:
+        path: /app/docker/tests
+
 ############################
 #  RESOURCES
 
@@ -36,6 +62,15 @@ resources:
   source:
     uri: https://github.com/cloud-gov/((name))
     branch: ((git-branch))
+
+- name: dev-docker-image
+  type: docker-image
+  icon: docker
+  source:
+    email: ((docker-email))
+    username: ((docker-username))
+    password: ((docker-password))
+    repository: ((docker-image-dev))
 
 ############################
 #  RESOURCE TYPES
