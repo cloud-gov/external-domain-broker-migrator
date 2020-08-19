@@ -42,7 +42,7 @@ def vcap_services():
                 "plan": "medium-psql",
                 "tags": ["database", "RDS"],
             }
-        ],
+        ]
     }
 
     return json.dumps(data)
