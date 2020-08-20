@@ -4,7 +4,7 @@ from migrator.db import check_connections
 
 
 def main():
-   # check_connections()
+    # check_connections()
     while True:
         time.sleep(1)
 
