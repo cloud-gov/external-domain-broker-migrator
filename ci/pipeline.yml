@@ -1,4 +1,9 @@
 ---
+cf-manifest-vars: &cf-manifest-vars
+  vars:
+    APP_NAME: ((name))
+    CDN_DB_NAME: ((cdn_db_name))
+
 jobs:
 
 - name: reconfigure
@@ -42,6 +47,40 @@ jobs:
       run:
         path: /app/docker/tests
 
+- name: dev
+  plan:
+  - in_parallel:
+    - get: src
+      params: {depth: 1}
+      trigger: true
+      passed: [test]
+    - get: pipeline-tasks
+  - put: cf-dev
+    params:
+      path: src
+      manifest: src/manifest.yml
+      show_app_log: true
+      <<: *cf-manifest-vars
+      ENV: development
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy external-domain-broker-migrator on development
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed external-domain-broker-migrator on development
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
 ############################
 #  RESOURCES
 
@@ -71,6 +110,29 @@ resources:
     username: ((docker-username))
     password: ((docker-password))
     repository: ((docker-image-dev))
+
+- name: cf-dev
+  type: cf
+  icon: cloud-upload
+  source:
+    api: ((dev-cf-api-url))
+    username: ((dev-cf-username))
+    password: ((dev-cf-password))
+    organization: ((migrator-organization))
+    space: ((migrator-space))
+
+- name: slack
+  type: slack-notification
+  source:
+    url: ((slack-webhook-url))
+
+- name: pipeline-tasks
+  type: git
+  icon: github-circle
+  source:
+    uri: ((pipeline-tasks-git-url))
+    branch: ((pipeline-tasks-git-branch))
+
 
 ############################
 #  RESOURCE TYPES
