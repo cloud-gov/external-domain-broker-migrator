@@ -61,7 +61,8 @@ jobs:
       manifest: src/manifest.yml
       show_app_log: true
       <<: *cf-manifest-vars
-      ENV: development
+      environment_variables:
+        ENV: development
   on_failure:
     put: slack
     params:
