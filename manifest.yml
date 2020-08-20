@@ -4,7 +4,8 @@ applications:
   memory: 256M
   instances: 3
   command: python3 -m migrator
-  health_check_type: process
+  no-route: true
+  health-check-type: process
   services:
   - ((CDN_DB_NAME))
   buildpacks:
