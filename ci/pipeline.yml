@@ -63,6 +63,7 @@ jobs:
       <<: *cf-manifest-vars
       environment_variables:
         ENV: development
+        DNS_ROOT_DOMAIN: ((dev-dns-root-domain))
   on_failure:
     put: slack
     params:
@@ -99,6 +100,8 @@ jobs:
       <<: *cf-manifest-vars
       environment_variables:
         ENV: staging
+        DNS_ROOT_DOMAIN: ((staging-dns-root-domain))
+
   on_failure:
     put: slack
     params:
