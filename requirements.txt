@@ -5,6 +5,7 @@
 #    ./dev update-requirements
 #
 cfenv==0.5.3              # via -r pip-tools/requirements.in
+dnspython==2.0.0          # via -r pip-tools/requirements.in
 environs==8.0.0           # via -r pip-tools/requirements.in
 furl==2.1.0               # via cfenv
 marshmallow==3.7.1        # via environs

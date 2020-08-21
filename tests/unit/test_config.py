@@ -53,6 +53,7 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("VCAP_APPLICATION", vcap_application)
     monkeypatch.setenv("VCAP_SERVICES", vcap_services)
     monkeypatch.setenv("ENV", "local")
+    monkeypatch.setenv("DNS_ROOT_DOMAIN", "cloud.test")
 
 
 @pytest.mark.parametrize("env", ["local", "development", "staging", "production"])

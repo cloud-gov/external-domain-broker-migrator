@@ -26,6 +26,8 @@ class LocalConfig(Config):
         self.TESTING = True
         self.DEBUG = True
         self.CDN_BROKER_DATABASE_URI = "postgresql://localhost/local-development-cdn"
+        self.DNS_VERIFICATION_SERVER = "127.0.0.1:8053"
+        self.DNS_ROOT_DOMAIN = "domains.cloud.test"
 
 
 class AppConfig(Config):
@@ -33,6 +35,8 @@ class AppConfig(Config):
         super().__init__()
         cdn_db = self.cf_env_parser.get_service(name="rds-cdn-broker")
         self.CDN_BROKER_DATABASE_URI = cdn_db.credentials["uri"]
+        self.DNS_VERIFICATION_SERVER = "8.8.8.8:53"
+        self.DNS_ROOT_DOMAIN = self.env_parser("DNS_ROOT_DOMAIN")
 
 
 class DevelopmentConfig(AppConfig):

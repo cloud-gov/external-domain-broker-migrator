@@ -1,4 +1,5 @@
 from tests.lib.database import clean_db
+from tests.lib.dns import dns
 
 
 def pytest_configure(config):
