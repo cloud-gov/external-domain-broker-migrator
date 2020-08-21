@@ -1,4 +1,5 @@
 cfenv
+dnspython
 environs
 sqlalchemy
 psycopg2
