@@ -82,6 +82,42 @@ jobs:
       username: ((slack-username))
       icon_url: ((slack-icon-url))
 
+
+- name: staging
+  plan:
+  - in_parallel:
+    - get: src
+      params: {depth: 1}
+      trigger: true
+      passed: [dev]
+    - get: pipeline-tasks
+  - put: cf-staging
+    params:
+      path: src
+      manifest: src/manifest.yml
+      show_app_log: true
+      <<: *cf-manifest-vars
+      environment_variables:
+        ENV: staging
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy external-domain-broker-migrator on staging
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed external-domain-broker-migrator on staging
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
 ############################
 #  RESOURCES
 
@@ -119,6 +155,16 @@ resources:
     api: ((dev-cf-api-url))
     username: ((dev-cf-username))
     password: ((dev-cf-password))
+    organization: ((migrator-organization))
+    space: ((migrator-space))
+
+- name: cf-staging
+  type: cf
+  icon: cloud-upload
+  source:
+    api: ((staging-cf-api-url))
+    username: ((staging-cf-username))
+    password: ((staging-cf-password))
     organization: ((migrator-organization))
     space: ((migrator-space))
 
