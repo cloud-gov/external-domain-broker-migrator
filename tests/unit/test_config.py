@@ -54,18 +54,23 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("VCAP_SERVICES", vcap_services)
     monkeypatch.setenv("ENV", "local")
     monkeypatch.setenv("DNS_ROOT_DOMAIN", "cloud.test")
+    monkeypatch.setenv("AWS_COMMERCIAL_REGION", "us-west-1")
+    monkeypatch.setenv("AWS_COMMERCIAL_ACCESS_KEY_ID", "ASIANOTAREALKEY")
+    monkeypatch.setenv("AWS_COMMERCIAL_SECRET_ACCESS_KEY", "NOT_A_REAL_SECRET_KEY")
 
 
 @pytest.mark.parametrize("env", ["local", "development", "staging", "production"])
 def test_config_doesnt_explode(env, monkeypatch, mocked_env):
     monkeypatch.setenv("ENV", env)
     config = config_from_env()
-
     assert config.ENV == env
 
 
 @pytest.mark.parametrize("env", ["development", "staging", "production"])
-def test_config_gets_database_uri(env, monkeypatch, mocked_env):
+def test_config_gets_credentials(env, monkeypatch, mocked_env):
     monkeypatch.setenv("ENV", env)
     config = config_from_env()
     assert config.CDN_BROKER_DATABASE_URI == "cdn-db-uri"
+    assert config.AWS_COMMERCIAL_REGION == "us-west-1"
+    assert config.AWS_COMMERCIAL_ACCESS_KEY_ID == "ASIANOTAREALKEY"
+    assert config.AWS_COMMERCIAL_SECRET_ACCESS_KEY == "NOT_A_REAL_SECRET_KEY"
