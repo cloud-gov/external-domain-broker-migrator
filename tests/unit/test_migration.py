@@ -1,5 +1,5 @@
 import pytest
-from migrator.migrator import find_active_instances, check_route_dns
+from migrator.migration import find_active_instances, Migration
 from migrator.models import CdnRoute
 
 
@@ -28,7 +28,8 @@ def test_validate_good_dns(clean_db, dns):
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com"
-    assert check_route_dns(route)
+    migration = Migration(route)
+    assert migration.has_valid_dns
 
 
 def test_validate_bad_dns(clean_db, dns):
@@ -36,14 +37,8 @@ def test_validate_bad_dns(clean_db, dns):
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com"
-    assert not check_route_dns(route)
-
-
-def test_validate_no_domains(clean_db, dns):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    assert not check_route_dns(route)
+    migration = Migration(route)
+    assert not migration.has_valid_dns
 
 
 def test_validate_mixed_good_and_bad_dns(clean_db, dns):
@@ -52,7 +47,8 @@ def test_validate_mixed_good_and_bad_dns(clean_db, dns):
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com,foo.example.com"
-    assert not check_route_dns(route)
+    migration = Migration(route)
+    assert not migration.has_valid_dns
 
 
 def test_validate_multiple_valid_dns(clean_db, dns):
@@ -62,4 +58,17 @@ def test_validate_multiple_valid_dns(clean_db, dns):
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com,foo.example.com"
-    assert check_route_dns(route)
+    migration = Migration(route)
+    assert Migration.has_valid_dns
+
+
+def test_migration_init(clean_db):
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.instance_id = "asdf-asdf"
+    route.domain_external = "example.com,foo.example.com"
+    route.dist_id = "some-distribution-id"
+    migration = Migration(route)
+    assert sorted(migration.domains) == sorted(["example.com", "foo.example.com"])
+    assert migration.instance_id == "asdf-asdf"
+    assert migration.cloudfront_distribution_id == "some-distribution-id"
