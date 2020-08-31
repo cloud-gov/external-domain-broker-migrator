@@ -72,3 +72,79 @@ def test_migration_init(clean_db):
     assert sorted(migration.domains) == sorted(["example.com", "foo.example.com"])
     assert migration.instance_id == "asdf-asdf"
     assert migration.cloudfront_distribution_id == "some-distribution-id"
+
+
+def test_migration_loads_cloudfront_config(clean_db, cloudfront):
+    domains = ["example.gov"]
+    cloudfront.expect_get_distribution(
+        caller_reference="asdf",
+        domains=domains,
+        certificate_id="mycertificateid",
+        origin_hostname="cloud.test",
+        origin_path="",
+        distribution_id="sample-distribution-id",
+        status="active",
+        custom_error_responses={
+            "Quantity": 1,
+            "Items": [
+                {
+                    "ErrorCode": 400,
+                    "ResponsePagePath": "/errors/400.html",
+                    "ResponseCode": "400",
+                }
+            ],
+        },
+    )
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.domain_external = "example.gov"
+    route.dist_id = "sample-distribution-id"
+    migration = Migration(route)
+    assert migration.cloudfront_distribution_data is not None
+    cloudfront.assert_no_pending_responses()
+    assert migration.cloudfront_distribution_config is not None
+    assert (
+        migration.cloudfront_distribution_arn
+        == "arn:aws:cloudfront::000000000000:distribution/sample-distribution-id"
+    )
+    assert migration.forward_cookie_policy == "all"
+    assert migration.forwarded_cookies == []
+    assert migration.forwarded_headers == ["HOST"]
+    assert migration.custom_error_responses == {"400": "/errors/400.html"}
+    assert migration.origin_hostname == "cloud.test"
+    assert migration.origin_path == ""
+    assert migration.origin_protocol_policy == "https-only"
+    assert migration.iam_certificate_id == "mycertificateid"
+
+
+def test_migration_loads_cloudfront_config_with_no_error_reponses(clean_db, cloudfront):
+    domains = ["example.gov"]
+    cloudfront.expect_get_distribution(
+        caller_reference="asdf",
+        domains=domains,
+        certificate_id="not-used-in-this-test",
+        origin_hostname="cloud.test",
+        origin_path="",
+        distribution_id="sample-distribution-id",
+        status="active",
+        custom_error_responses={"Quantity": 0,},
+    )
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.domain_external = "example.gov"
+    route.dist_id = "sample-distribution-id"
+    migration = Migration(route)
+    assert migration.cloudfront_distribution_data is not None
+    cloudfront.assert_no_pending_responses()
+    assert migration.cloudfront_distribution_config is not None
+    assert (
+        migration.cloudfront_distribution_arn
+        == "arn:aws:cloudfront::000000000000:distribution/sample-distribution-id"
+    )
+    assert migration.forward_cookie_policy == "all"
+    assert migration.forwarded_cookies == []
+    assert migration.forwarded_headers == ["HOST"]
+    assert migration.custom_error_responses == {}
+    assert migration.origin_hostname == "cloud.test"
+    assert migration.origin_path == ""
+    assert migration.origin_protocol_policy == "https-only"
