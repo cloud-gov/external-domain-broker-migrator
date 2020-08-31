@@ -173,7 +173,7 @@ def distribution_config(
             "MinTTL": 0,
             "AllowedMethods": {
                 "Quantity": 7,
-                "Items": ["GET", "HEAD", "POST", "PUT", "PATCH", "OPTIONS", "DELETE",],
+                "Items": ["GET", "HEAD", "POST", "PUT", "PATCH", "OPTIONS", "DELETE"],
                 "CachedMethods": {"Quantity": 2, "Items": ["GET", "HEAD"]},
             },
             "SmoothStreaming": False,

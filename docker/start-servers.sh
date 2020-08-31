@@ -11,6 +11,7 @@ if ! pgrep -x postgres > /dev/null; then
     echo > "$LOGS/postgres.log"
     pg_ctl -l "$LOGS/postgres.log" start 
     psql -h localhost --dbname="local-development-cdn" -f /app/docker/cdn-broker-schema.sql
+    psql -h localhost --dbname="local-development-external-domain" -f /app/docker/external-domain-broker-schema.sql
   )
 fi
 
