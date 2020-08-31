@@ -127,7 +127,7 @@ def test_migration_loads_cloudfront_config_with_no_error_reponses(clean_db, clou
         origin_path="",
         distribution_id="sample-distribution-id",
         status="active",
-        custom_error_responses={"Quantity": 0,},
+        custom_error_responses={"Quantity": 0},
     )
     route = CdnRoute()
     route.state = "provisioned"

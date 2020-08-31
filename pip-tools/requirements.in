@@ -1,6 +1,8 @@
 boto3
 cfenv
+cryptography
 dnspython
 environs
 sqlalchemy
+sqlalchemy-utils
 psycopg2

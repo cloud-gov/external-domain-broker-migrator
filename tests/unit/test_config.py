@@ -41,7 +41,22 @@ def vcap_services():
                 "name": "rds-cdn-broker",
                 "plan": "medium-psql",
                 "tags": ["database", "RDS"],
-            }
+            },
+            {
+                "credentials": {
+                    "db_name": "external-domain-db-name",
+                    "host": "external-domain-db-host",
+                    "password": "external-domain-db-password",
+                    "port": "external-domain-db-port",
+                    "uri": "external-domain-db-uri",
+                    "username": "external-domain-db-username",
+                },
+                "instance_name": "external-domain-broker-psql",
+                "label": "aws-rds",
+                "name": "external-domain-broker-psql",
+                "plan": "medium-psql",
+                "tags": ["database", "RDS"],
+            },
         ]
     }
 
@@ -57,6 +72,7 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("AWS_COMMERCIAL_REGION", "us-west-1")
     monkeypatch.setenv("AWS_COMMERCIAL_ACCESS_KEY_ID", "ASIANOTAREALKEY")
     monkeypatch.setenv("AWS_COMMERCIAL_SECRET_ACCESS_KEY", "NOT_A_REAL_SECRET_KEY")
+    monkeypatch.setenv("DATABASE_ENCRYPTION_KEY", "NOT_A_REAL_SECRET_KEY")
 
 
 @pytest.mark.parametrize("env", ["local", "development", "staging", "production"])
@@ -71,6 +87,7 @@ def test_config_gets_credentials(env, monkeypatch, mocked_env):
     monkeypatch.setenv("ENV", env)
     config = config_from_env()
     assert config.CDN_BROKER_DATABASE_URI == "cdn-db-uri"
+    assert config.EXTERNAL_DOMAIN_BROKER_DATABASE_URI == "external-domain-db-uri"
     assert config.AWS_COMMERCIAL_REGION == "us-west-1"
     assert config.AWS_COMMERCIAL_ACCESS_KEY_ID == "ASIANOTAREALKEY"
     assert config.AWS_COMMERCIAL_SECRET_ACCESS_KEY == "NOT_A_REAL_SECRET_KEY"
