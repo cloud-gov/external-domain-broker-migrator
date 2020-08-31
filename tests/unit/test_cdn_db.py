@@ -39,4 +39,6 @@ def test_check_connections():
     with pytest.raises(Exception):
         db.check_connections(cdn_session_maker=Session, cdn_binding=engine)
 
+    with pytest.raises(Exception):
+        db.check_connections(cdn_session_maker=Session, external_domain_binding=engine)
     db.check_connections()
