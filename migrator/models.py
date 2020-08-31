@@ -3,10 +3,10 @@ from sqlalchemy.ext import declarative
 from sqlalchemy.dialects import postgresql
 from sqlalchemy import orm
 
-Base = declarative.declarative_base()
+CdnBase = declarative.declarative_base()
 
 
-class CdnUserData(Base):
+class CdnUserData(CdnBase):
     """
     CdnUserData is about the Let's Encrypt user associated with a CdnRoute.
     We probably have no reason to ever think about this model in this project.
@@ -23,7 +23,7 @@ class CdnUserData(Base):
     key = sa.Column(postgresql.BYTEA)
 
 
-class CdnRoute(Base):
+class CdnRoute(CdnBase):
     """
     CdnRoute represents the core of the service instance
     """
@@ -54,7 +54,7 @@ class CdnRoute(Base):
     state = sa.Column(sa.Text)
 
 
-class CdnCertificate(Base):
+class CdnCertificate(CdnBase):
     __tablename__ = "certificates"
 
     id = sa.Column(sa.Integer, primary_key=True)
