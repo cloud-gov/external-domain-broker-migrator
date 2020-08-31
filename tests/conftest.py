@@ -1,5 +1,6 @@
 from tests.lib.database import clean_db
 from tests.lib.dns import dns
+from tests.lib.fake_cloudfront import cloudfront
 
 
 def pytest_configure(config):
