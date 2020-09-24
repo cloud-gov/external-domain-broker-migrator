@@ -12,3 +12,4 @@ commercial_session = boto3.Session(
     aws_secret_access_key=config.AWS_COMMERCIAL_SECRET_ACCESS_KEY,
 )
 cloudfront = commercial_session.client("cloudfront")
+iam_commercial = commercial_session.client("iam")

@@ -1,7 +1,7 @@
 from migrator.dns import has_expected_cname
 from migrator.db import session_handler
-from migrator.extensions import cloudfront
-from migrator.models import CdnRoute, EdbCDNServiceInstance
+from migrator.extensions import cloudfront, iam_commercial
+from migrator.models import CdnRoute, EdbCDNServiceInstance, EdbCertificate
 
 
 def find_active_instances(session):
@@ -96,33 +96,57 @@ class Migration:
             "IAMCertificateId"
         ]
 
-    @property
-    def external_domain_broker_service_instance(self) -> EdbCDNServiceInstance:
-        if self._external_domain_broker_service_instance is None:
-            si = (
-                self.session.query(EdbCDNServiceInstance)
-                .filter_by(id=self.instance_id)
-                .first()
-            )
-            if si is None:
-                si = EdbCDNServiceInstance()
-            self._external_domain_broker_service_instance = si
-            si.id = self.instance_id
-            si.domain_names = self.domains
-            si.domain_internal = self.cloudfront_origin_hostname
-            si.origin_protocol_policy = self.origin_protocol_policy
-            si.cloudfront_distribution_arn = self.cloudfront_distribution_arn
-            si.cloudfront_origin_hostname = self.origin_hostname
-            si.cloudfront_origin_path = self.origin_path
-            si.error_responses = self.custom_error_responses
-            si.forwarded_headers = self.forwarded_headers
-            si.forward_cookie_policy = self.forward_cookie_policy
-            si.forwarded_cookies = self.forwarded_cookies
+    def upsert_edb_cdn_instance(self):
+        si = (
+            self.session.query(EdbCDNServiceInstance)
+            .filter_by(id=self.instance_id)
+            .first()
+        )
+        if si is None:
+            si = EdbCDNServiceInstance()
+        self._external_domain_broker_service_instance = si
+        si.id = self.instance_id
+        si.domain_names = self.domains
+        si.domain_internal = self.cloudfront_origin_hostname
+        si.origin_protocol_policy = self.origin_protocol_policy
+        si.cloudfront_distribution_arn = self.cloudfront_distribution_arn
+        si.cloudfront_origin_hostname = self.origin_hostname
+        si.cloudfront_origin_path = self.origin_path
+        si.error_responses = self.custom_error_responses
+        si.forwarded_headers = self.forwarded_headers
+        si.forward_cookie_policy = self.forward_cookie_policy
+        si.forwarded_cookies = self.forwarded_cookies
+        self.external_domain_broker_service_instance = si
+        return si
 
-            self.session.add(si)
-            self.session.commit()
-
-        return self._external_domain_broker_service_instance
+    def upsert_edb_certificate(self):
+        cert_response = {"IsTruncated": True}
+        server_certificate = None
+        while cert_response["IsTruncated"] and not server_certificate:
+            kwargs = {}
+            if cert_response.get("Marker"):
+                kwargs["Marker"] = cert_response["Marker"]
+            cert_response = iam_commercial.list_server_certificates(**kwargs)
+            for cert in cert_response["ServerCertificateMetadataList"]:
+                if cert["ServerCertificateId"] == self.iam_certificate_id:
+                    server_certificate = cert
+        edb_certificate = EdbCertificate()
+        edb_certificate.expires_at = server_certificate["Expiration"]
+        edb_certificate.iam_server_certificate_arn = server_certificate["Arn"]
+        edb_certificate.iam_server_certificate_name = server_certificate[
+            "ServerCertificateName"
+        ]
+        edb_certificate.iam_server_certificate_id = server_certificate[
+            "ServerCertificateId"
+        ]
+        edb_certificate.service_instance_id = self.instance_id
+        self.external_domain_broker_service_instance.current_certificate = (
+            edb_certificate
+        )
+        self.session.add(self.external_domain_broker_service_instance)
+        self.session.add(edb_certificate)
+        self.session.commit()
+        return edb_certificate
 
     @staticmethod
     def parse_cloudfront_error_response(error_responses):
