@@ -169,6 +169,7 @@ def test_migration_creates_edb_instance(clean_db, cloudfront):
     route.dist_id = "sample-distribution-id"
     route.instance_id = "some-service-instance-id"
     migration = Migration(route, clean_db)
+    migration.upsert_edb_cdn_instance()
     si = migration.external_domain_broker_service_instance
     assert si.domain_names == domains
     assert si.domain_internal == "example.cloudfront.net"
@@ -252,6 +253,7 @@ def test_migration_creates_edb_instance_with_error_pages(clean_db, cloudfront):
     route.dist_id = "sample-distribution-id"
     route.instance_id = "some-service-instance-id"
     migration = Migration(route, clean_db)
+    migration.upsert_edb_cdn_instance()
     si = migration.external_domain_broker_service_instance
     assert si.error_responses == {"404": "/path"}
     cloudfront.assert_no_pending_responses()
@@ -276,6 +278,7 @@ def test_migration_creates_edb_instance_with_forward_headers(clean_db, cloudfron
     route.dist_id = "sample-distribution-id"
     route.instance_id = "some-service-instance-id"
     migration = Migration(route, clean_db)
+    migration.upsert_edb_cdn_instance()
     si = migration.external_domain_broker_service_instance
     assert si.forwarded_headers == ["HOST", "my-header"]
     cloudfront.assert_no_pending_responses()
@@ -303,6 +306,7 @@ def test_migration_creates_edb_instance_with_forward_cookies_filtered(
     route.dist_id = "sample-distribution-id"
     route.instance_id = "some-service-instance-id"
     migration = Migration(route, clean_db)
+    migration.upsert_edb_cdn_instance()
     si = migration.external_domain_broker_service_instance
     cloudfront.assert_no_pending_responses()
     assert si.forward_cookie_policy == "whitelist"
@@ -328,6 +332,7 @@ def test_migration_creates_edb_instance_with_forward_cookies_none(clean_db, clou
     route.dist_id = "sample-distribution-id"
     route.instance_id = "some-service-instance-id"
     migration = Migration(route, clean_db)
+    migration.upsert_edb_cdn_instance()
     si = migration.external_domain_broker_service_instance
     cloudfront.assert_no_pending_responses()
     assert si.forward_cookie_policy == "none"
@@ -353,7 +358,46 @@ def test_migration_creates_edb_instance_with_forward_cookies_all(clean_db, cloud
     route.dist_id = "sample-distribution-id"
     route.instance_id = "some-service-instance-id"
     migration = Migration(route, clean_db)
+    migration.upsert_edb_cdn_instance()
     si = migration.external_domain_broker_service_instance
     cloudfront.assert_no_pending_responses()
     assert si.forward_cookie_policy == "all"
     assert si.forwarded_cookies == []
+
+
+def test_migration_creates_certificate(clean_db, cloudfront, iam_commercial):
+    domains = ["example.gov"]
+    cloudfront.expect_get_distribution(
+        caller_reference="asdf",
+        domains=domains,
+        certificate_id="the-certificate-id",
+        origin_hostname="cloud.test",
+        origin_path="/test",
+        distribution_id="sample-distribution-id",
+        status="active",
+    )
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.domain_external = "example.gov"
+    route.domain_internal = "example.cloudfront.net"
+    route.dist_id = "sample-distribution-id"
+    route.instance_id = "some-service-instance-id"
+    iam_commercial.expect_list_server_certificates(
+        target_certificate_name="not-the-certificate-name",
+        target_certificate_path="/cloudfront/",
+        target_certificate_id="not-the-certificate-id",
+        is_truncated=True,
+    )
+    iam_commercial.expect_list_server_certificates(
+        target_certificate_name="the-certificate-name",
+        target_certificate_path="/cloudfront/",
+        target_certificate_id="the-certificate-id",
+        marker_in="1",
+    )
+    migration = Migration(route, clean_db)
+    migration.upsert_edb_cdn_instance()
+    migration.upsert_edb_certificate()
+    cert = migration.external_domain_broker_service_instance.current_certificate
+    assert cert is not None
+    assert cert.iam_server_certificate_name == "the-certificate-name"
+    assert cert.iam_server_certificate_id == "the-certificate-id"
