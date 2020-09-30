@@ -73,6 +73,7 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("AWS_COMMERCIAL_ACCESS_KEY_ID", "ASIANOTAREALKEY")
     monkeypatch.setenv("AWS_COMMERCIAL_SECRET_ACCESS_KEY", "NOT_A_REAL_SECRET_KEY")
     monkeypatch.setenv("DATABASE_ENCRYPTION_KEY", "NOT_A_REAL_SECRET_KEY")
+    monkeypatch.setenv("ROUTE53_ZONE_ID", "FAKEZONEID")
 
 
 @pytest.mark.parametrize("env", ["local", "development", "staging", "production"])
@@ -91,3 +92,4 @@ def test_config_gets_credentials(env, monkeypatch, mocked_env):
     assert config.AWS_COMMERCIAL_REGION == "us-west-1"
     assert config.AWS_COMMERCIAL_ACCESS_KEY_ID == "ASIANOTAREALKEY"
     assert config.AWS_COMMERCIAL_SECRET_ACCESS_KEY == "NOT_A_REAL_SECRET_KEY"
+    assert config.ROUTE53_ZONE_ID == "FAKEZONEID"

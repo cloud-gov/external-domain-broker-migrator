@@ -401,3 +401,21 @@ def test_migration_creates_certificate(clean_db, cloudfront, iam_commercial):
     assert cert is not None
     assert cert.iam_server_certificate_name == "the-certificate-name"
     assert cert.iam_server_certificate_id == "the-certificate-id"
+
+
+def test_migration_create_internal_dns(clean_db, route53):
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.domain_external = "example.gov"
+    route.domain_internal = "example.cloudfront.net"
+    route.dist_id = "sample-distribution-id"
+    route.instance_id = "some-service-instance-id"
+    migration = Migration(route, clean_db)
+    change_id = route53.expect_create_ALIAS_and_return_change_id(
+        "example.gov.domains.cloud.test", "example.cloudfront.net"
+    )
+    route53.expect_wait_for_change_insync(change_id)
+    # since the dns already exists, this should be a no-op
+    # so the assertion we're making is that the stubbed route53
+    # doesn't blow up for an unstubbed response
+    migration.upsert_dns()

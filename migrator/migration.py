@@ -1,6 +1,6 @@
 from migrator.dns import has_expected_cname
 from migrator.db import session_handler
-from migrator.extensions import cloudfront, iam_commercial
+from migrator.extensions import cloudfront, config, iam_commercial, route53
 from migrator.models import CdnRoute, EdbCDNServiceInstance, EdbCertificate
 
 
@@ -14,7 +14,7 @@ class Migration:
     def __init__(self, route: CdnRoute, session):
         self.domains = route.domain_external.split(",")
         self.instance_id = route.instance_id
-        self.cloudfront_origin_hostname = route.domain_internal
+        self.domain_internal = route.domain_internal
         self.cloudfront_distribution_id = route.dist_id
         self._cloudfront_distribution_data = None
         self.session = session
@@ -107,7 +107,7 @@ class Migration:
         self._external_domain_broker_service_instance = si
         si.id = self.instance_id
         si.domain_names = self.domains
-        si.domain_internal = self.cloudfront_origin_hostname
+        si.domain_internal = self.domain_internal
         si.origin_protocol_policy = self.origin_protocol_policy
         si.cloudfront_distribution_arn = self.cloudfront_distribution_arn
         si.cloudfront_origin_hostname = self.origin_hostname
@@ -147,6 +147,53 @@ class Migration:
         self.session.add(edb_certificate)
         self.session.commit()
         return edb_certificate
+
+    def upsert_dns(self):
+        change_ids = []
+        for domain in self.domains:
+            alias_record = f"{domain}.{config.DNS_ROOT_DOMAIN}"
+            target = self.domain_internal
+            route53_response = route53.change_resource_record_sets(
+                ChangeBatch={
+                    "Changes": [
+                        {
+                            "Action": "UPSERT",
+                            "ResourceRecordSet": {
+                                "Type": "A",
+                                "Name": alias_record,
+                                "AliasTarget": {
+                                    "DNSName": target,
+                                    "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
+                                    "EvaluateTargetHealth": False,
+                                },
+                            },
+                        },
+                        {
+                            "Action": "UPSERT",
+                            "ResourceRecordSet": {
+                                "Type": "AAAA",
+                                "Name": alias_record,
+                                "AliasTarget": {
+                                    "DNSName": target,
+                                    "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
+                                    "EvaluateTargetHealth": False,
+                                },
+                            },
+                        },
+                    ]
+                },
+                HostedZoneId=config.ROUTE53_ZONE_ID,
+            )
+            change_ids.append(route53_response["ChangeInfo"]["Id"])
+        for change_id in change_ids:
+            waiter = route53.get_waiter("resource_record_sets_changed")
+            waiter.wait(
+                Id=change_id,
+                WaiterConfig={
+                    "Delay": config.AWS_POLL_WAIT_TIME_IN_SECONDS,
+                    "MaxAttempts": config.AWS_POLL_MAX_ATTEMPTS,
+                },
+            )
 
     @staticmethod
     def parse_cloudfront_error_response(error_responses):
