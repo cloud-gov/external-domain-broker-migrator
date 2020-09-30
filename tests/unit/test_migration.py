@@ -415,7 +415,4 @@ def test_migration_create_internal_dns(clean_db, route53):
         "example.gov.domains.cloud.test", "example.cloudfront.net"
     )
     route53.expect_wait_for_change_insync(change_id)
-    # since the dns already exists, this should be a no-op
-    # so the assertion we're making is that the stubbed route53
-    # doesn't blow up for an unstubbed response
     migration.upsert_dns()
