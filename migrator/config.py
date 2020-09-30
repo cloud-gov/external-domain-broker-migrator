@@ -61,7 +61,7 @@ class AppConfig(Config):
         self.AWS_COMMERCIAL_SECRET_ACCESS_KEY = self.env_parser(
             "AWS_COMMERCIAL_SECRET_ACCESS_KEY"
         )
-        self.ROUTE53_ZONE_ID = self.env_parser("ROUTE53_ZONE_ID")
+        self.ROUTE53_ZONE_ID = self.env_parser("ROUTE53_HOSTED_ZONE_ID")
         self.AWS_POLL_WAIT_TIME_IN_SECONDS = 60
         self.AWS_POLL_MAX_ATTEMPTS = 10
 
