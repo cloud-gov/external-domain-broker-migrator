@@ -35,6 +35,11 @@ class LocalConfig(Config):
         self.AWS_COMMERCIAL_REGION = "us-west-1"
         self.AWS_COMMERCIAL_ACCESS_KEY_ID = "ASIANOTAREALKEY"
         self.AWS_COMMERCIAL_SECRET_ACCESS_KEY = "THIS_IS_A_FAKE_KEY"
+        self.ROUTE53_ZONE_ID = "FAKEZONEID"
+        # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
+        self.CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2"
+        self.AWS_POLL_WAIT_TIME_IN_SECONDS = 0.01
+        self.AWS_POLL_MAX_ATTEMPTS = 10
 
 
 class AppConfig(Config):
@@ -56,6 +61,9 @@ class AppConfig(Config):
         self.AWS_COMMERCIAL_SECRET_ACCESS_KEY = self.env_parser(
             "AWS_COMMERCIAL_SECRET_ACCESS_KEY"
         )
+        self.ROUTE53_ZONE_ID = self.env_parser("ROUTE53_ZONE_ID")
+        self.AWS_POLL_WAIT_TIME_IN_SECONDS = 60
+        self.AWS_POLL_MAX_ATTEMPTS = 10
 
 
 class DevelopmentConfig(AppConfig):

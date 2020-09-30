@@ -40,35 +40,36 @@ class DNS:
             ).raise_for_status()
 
         def print_history(self):
+            print(f"    {len(self.history())} requests for {self.host}")
+
+        def history(self):
             response = requests.post(
                 self.base + "/dns-request-history", json={"host": self.host}
             )
             response.raise_for_status()
             items = response.json()
-            print(f"    {len(items)} requests for {self.host}")
+            return items
 
         def __str__(self):
             return f"{self.host} {self.record_type.upper()} with value {self.value}{self.target}"
 
     def __init__(self):
         self.base = "http://localhost:8055"
-        self.entries = []
+        self.entries = {}
 
     def add_cname(self, host, target=None):
-        if not host.startswith("_acme-challenge"):
-            raise Exception("host needs to start with _acme-challenge")
 
         if not target:
             target = f"{host}.domains.cloud.test."
-        self.entries.append(
-            self.Entry(record_type="cname", host=host, target=target, base=self.base)
+        self.entries[host] = self.Entry(
+            record_type="cname", host=host, target=target, base=self.base
         )
 
     def print_info(self):
         print("DNS information:")
         print("  Request History:")
 
-        for entry in self.entries:
+        for _, entry in self.entries.items():
             # Unfortunately, "host" is required, so we have to loop through
             # entries. This also means we won't see any requests for entries
             # we haven't created.
@@ -80,11 +81,11 @@ class DNS:
             print(f"    {entry}")
 
     def clear_all(self):
-        for entry in self.entries:
+        for _, entry in self.entries.items():
             # Unfortunately, the pebble-challtestsrv doesn't expose a
             # "clear-all" endpoint.
             entry.clear()
-        self.entries = []
+        self.entries = {}
 
 
 @pytest.fixture(scope="function")

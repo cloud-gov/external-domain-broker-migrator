@@ -13,3 +13,4 @@ commercial_session = boto3.Session(
 )
 cloudfront = commercial_session.client("cloudfront")
 iam_commercial = commercial_session.client("iam")
+route53 = commercial_session.client("route53")
