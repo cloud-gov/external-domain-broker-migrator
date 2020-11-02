@@ -6,4 +6,5 @@ pip-tools
 pytest
 pytest-profiling
 pytest-watch
+requests-mock
 requests

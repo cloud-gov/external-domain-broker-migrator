@@ -1,3 +1,6 @@
+import pytest
+import requests_mock
+
 from tests.lib.database import clean_db
 from tests.lib.dns import dns
 from tests.lib.fake_cloudfront import cloudfront
@@ -31,3 +34,9 @@ def pytest_collection_modifyitems(items, config):
         print("\nOnly running @pytest.mark.focus tests")
         config.hook.pytest_deselected(items=deselected_items)
         items[:] = selected_items
+
+
+@pytest.fixture
+def fake_requests():
+    with requests_mock.Mocker(real_http=False) as m:
+        yield m
