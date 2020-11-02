@@ -4,16 +4,19 @@
 #
 #    ./dev update-requirements
 #
+aiohttp==3.6.2            # via -r pip-tools/../requirements.txt, cloudfoundry-client
 appdirs==1.4.3            # via black
-attrs==19.3.0             # via black, pytest
+async-timeout==3.0.1      # via -r pip-tools/../requirements.txt, aiohttp
+attrs==20.2.0             # via -r pip-tools/../requirements.txt, aiohttp, black, pytest
 black==19.10b0            # via -r pip-tools/dev-requirements.in
 boto3==1.14.48            # via -r pip-tools/../requirements.txt
 botocore==1.17.48         # via -r pip-tools/../requirements.txt, boto3, s3transfer
-certifi==2020.6.20        # via requests
+certifi==2020.6.20        # via -r pip-tools/../requirements.txt, requests
 cfenv==0.5.3              # via -r pip-tools/../requirements.txt
 cffi==1.14.2              # via -r pip-tools/../requirements.txt, cryptography
-chardet==3.0.4            # via requests
+chardet==3.0.4            # via -r pip-tools/../requirements.txt, aiohttp, requests
 click==7.1.1              # via black, pip-tools
+cloudfoundry-client==1.14.1  # via -r pip-tools/../requirements.txt
 colorama==0.4.3           # via pytest-watch
 cryptography==3.1         # via -r pip-tools/../requirements.txt
 dnspython==2.0.0          # via -r pip-tools/../requirements.txt
@@ -23,17 +26,20 @@ environs==8.0.0           # via -r pip-tools/../requirements.txt
 flake8==3.8.2             # via -r pip-tools/dev-requirements.in
 furl==2.1.0               # via -r pip-tools/../requirements.txt, cfenv
 gprof2dot==2019.11.30     # via pytest-profiling
-idna==2.10                # via requests
+idna==2.10                # via -r pip-tools/../requirements.txt, requests, yarl
 jmespath==0.10.0          # via -r pip-tools/../requirements.txt, boto3, botocore
 marshmallow==3.7.1        # via -r pip-tools/../requirements.txt, environs
 mccabe==0.6.1             # via flake8
 more-itertools==8.2.0     # via pytest
+multidict==4.7.6          # via -r pip-tools/../requirements.txt, aiohttp, yarl
+oauth2-client==1.2.1      # via -r pip-tools/../requirements.txt, cloudfoundry-client
 orderedmultidict==1.0.1   # via -r pip-tools/../requirements.txt, furl
 packaging==20.3           # via pytest
 pathspec==0.8.0           # via black
 pathtools==0.1.2          # via watchdog
 pip-tools==5.0.0          # via -r pip-tools/dev-requirements.in
 pluggy==0.13.1            # via pytest
+protobuf==3.6.1           # via -r pip-tools/../requirements.txt, cloudfoundry-client
 psycopg2==2.8.5           # via -r pip-tools/../requirements.txt
 py==1.8.1                 # via pytest
 pycodestyle==2.6.0        # via flake8
@@ -45,10 +51,12 @@ pytest-watch==4.2.0       # via -r pip-tools/dev-requirements.in
 pytest==5.4.1             # via -r pip-tools/dev-requirements.in, pytest-profiling, pytest-watch
 python-dateutil==2.8.1    # via -r pip-tools/../requirements.txt, botocore
 python-dotenv==0.14.0     # via -r pip-tools/../requirements.txt, environs
+pyyaml==5.3.1             # via -r pip-tools/../requirements.txt, cloudfoundry-client
 regex==2020.5.7           # via black
-requests==2.24.0          # via -r pip-tools/dev-requirements.in
+requests-mock==1.8.0      # via -r pip-tools/dev-requirements.in
+requests==2.24.0          # via -r pip-tools/../requirements.txt, -r pip-tools/dev-requirements.in, oauth2-client, requests-mock
 s3transfer==0.3.3         # via -r pip-tools/../requirements.txt, boto3
-six==1.15.0               # via -r pip-tools/../requirements.txt, cryptography, furl, orderedmultidict, packaging, pip-tools, pytest-profiling, python-dateutil, sqlalchemy-utils
+six==1.15.0               # via -r pip-tools/../requirements.txt, cryptography, furl, orderedmultidict, packaging, pip-tools, protobuf, pytest-profiling, python-dateutil, requests-mock, sqlalchemy-utils, websocket-client
 sqlalchemy-utils==0.36.8  # via -r pip-tools/../requirements.txt
 sqlalchemy==1.3.19        # via -r pip-tools/../requirements.txt, sqlalchemy-utils
 toml==0.10.0              # via black
@@ -56,6 +64,9 @@ typed-ast==1.4.1          # via black
 urllib3==1.25.10          # via -r pip-tools/../requirements.txt, botocore, requests
 watchdog==0.10.2          # via pytest-watch
 wcwidth==0.1.9            # via pytest
+websocket-client==0.53.0  # via -r pip-tools/../requirements.txt, cloudfoundry-client
+yarl==1.6.2               # via -r pip-tools/../requirements.txt, aiohttp
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
+# setuptools
