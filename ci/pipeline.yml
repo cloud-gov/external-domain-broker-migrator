@@ -70,6 +70,10 @@ jobs:
         AWS_COMMERCIAL_ACCESS_KEY_ID: ((dev-aws-commercial-access-key-id))
         AWS_COMMERCIAL_SECRET_ACCESS_KEY: ((dev-aws-commercial-secret-access-key))
         ROUTE53_HOSTED_ZONE_ID: ((dev-route53-hosted-zone-id))
+        CF_USERNAME: ((dev-cf-username))
+        CF_PASSWORD: ((dev-cf-password))
+        CF_API_ENDPOINT: ((dev-cf-api-endpoint))
+
   on_failure:
     put: slack
     params:
@@ -112,6 +116,9 @@ jobs:
         AWS_COMMERCIAL_ACCESS_KEY_ID: ((staging-aws-commercial-access-key-id))
         AWS_COMMERCIAL_SECRET_ACCESS_KEY: ((staging-aws-commercial-secret-access-key))
         ROUTE53_HOSTED_ZONE_ID: ((staging-route53-hosted-zone-id))
+        CF_USERNAME: ((staging-cf-username))
+        CF_PASSWORD: ((staging-cf-password))
+        CF_API_ENDPOINT: ((staging-cf-api-endpoint))
 
   on_failure:
     put: slack
