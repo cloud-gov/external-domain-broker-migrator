@@ -1,9 +1,8 @@
 import json
 
 import pytest
-from migrator.extensions import get_cf_client
-from migrator import service_plan
-import requests_mock
+from migrator import cf
+from migrator.extensions import config
 
 
 def get_test_client(fake_requests):
@@ -48,32 +47,12 @@ def get_test_client(fake_requests):
             dict(access_token="access-token", refresh_token="refresh-token")
         ),
     )
-    client = get_cf_client()
+    client = cf.get_cf_client(config)
     return client
 
 
-def test_get_client(fake_requests):
-    # this test mostly just validates the test framework
+@pytest.fixture
+def fake_cf_client(fake_requests):
     client = get_test_client(fake_requests)
-
-
-def test_enable_service_plan_2(fake_requests):
-    client = get_test_client(fake_requests)
-    response_body = """{
-  "metadata": {
-    "guid": "new-plan-visibiliy-guid",
-    "url": "/v2/service_plan_visibilities/new-plan-visibiliy-guid",
-    "created_at": "2016-06-08T16:41:31Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "service_plan_guid": "foo",
-    "organization_guid": "bar",
-    "service_plan_url": "/v2/service_plans/foo",
-    "organization_url": "/v2/organizations/bar"
-  }
-}"""
-    fake_requests.post(
-        "http://localhost/v2/service_plan_visibilities", text=response_body
-    )
-    res = service_plan.enable_plan_for_org("foo", "bar", client)
+    fake_requests.reset_mock()  # this makes it way easier for tests to make assertions
+    return client

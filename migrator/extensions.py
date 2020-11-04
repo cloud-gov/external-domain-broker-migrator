@@ -16,14 +16,4 @@ cloudfront = commercial_session.client("cloudfront")
 iam_commercial = commercial_session.client("iam")
 route53 = commercial_session.client("route53")
 
-
-def get_cf_client():
-    # "why is this a function, and the rest of these are static?"
-    # good question. The __init__ on this immediately probes the
-    # api endpoint, which means we need to stub it for testing.
-    # and having to add that stub to every test that _might_
-    # `import extensions` would be bonkers. As a function, we should
-    # only need to stub when we're actually thinking about CF
-    client = CloudFoundryClient(config.CF_API_ENDPOINT)
-    client.init_with_user_credentials(config.CF_USERNAME, config.CF_PASSWORD)
-    return client
+migration_plan_guid = "739e78F5-a919-46ef-9193-1293cc086c17"
