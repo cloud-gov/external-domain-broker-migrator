@@ -1,6 +1,13 @@
+from migrator import cf
 from migrator.dns import has_expected_cname
 from migrator.db import session_handler
-from migrator.extensions import cloudfront, config, iam_commercial, route53
+from migrator.extensions import (
+    cloudfront,
+    config,
+    iam_commercial,
+    route53,
+    migration_plan_guid,
+)
 from migrator.models import CdnRoute, EdbCDNServiceInstance, EdbCertificate
 
 
@@ -11,14 +18,17 @@ def find_active_instances(session):
 
 
 class Migration:
-    def __init__(self, route: CdnRoute, session):
+    def __init__(self, route: CdnRoute, session, client):
         self.domains = route.domain_external.split(",")
         self.instance_id = route.instance_id
         self.domain_internal = route.domain_internal
         self.cloudfront_distribution_id = route.dist_id
         self._cloudfront_distribution_data = None
         self.session = session
+        self.client = client
         self._external_domain_broker_service_instance = None
+        self._space_id = None
+        self._org_id = None
 
     @property
     def has_valid_dns(self):
@@ -95,6 +105,23 @@ class Migration:
         return self.cloudfront_distribution_config["ViewerCertificate"][
             "IAMCertificateId"
         ]
+
+    @property
+    def space_id(self):
+        if self._space_id is None:
+            self._space_id = cf.get_space_id_for_service_instance_id(
+                self.instance_id, self.client
+            )
+        return self._space_id
+
+    @property
+    def org_id(self):
+        if self._org_id is None:
+            self._org_id = cf.get_org_id_for_space_id(self.space_id, self.client)
+        return self._org_id
+
+    def enable_migration_service_plan(self):
+        cf.enable_plan_for_org(migration_plan_guid, self.org_id, self.client)
 
     def upsert_edb_cdn_instance(self):
         si = (

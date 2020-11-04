@@ -1,8 +1,11 @@
+import re
+
 import pytest
 import requests_mock
 
 from tests.lib.database import clean_db
 from tests.lib.dns import dns
+from tests.lib.fake_cf import fake_cf_client
 from tests.lib.fake_cloudfront import cloudfront
 from tests.lib.fake_iam import iam_commercial
 from tests.lib.fake_route53 import route53
@@ -39,4 +42,7 @@ def pytest_collection_modifyitems(items, config):
 @pytest.fixture
 def fake_requests():
     with requests_mock.Mocker(real_http=False) as m:
+        # let dns stuff come through
+        fake_dns_matcher = re.compile("http://localhost:8055/.*")
+        m.register_uri(requests_mock.ANY, fake_dns_matcher, real_http=True)
         yield m
