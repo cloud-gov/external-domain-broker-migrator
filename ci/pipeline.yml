@@ -173,7 +173,7 @@ resources:
   type: cf
   icon: cloud-upload
   source:
-    api: ((dev-cf-api-url))
+    api: ((dev-cf-api-endpoint))
     username: ((dev-cf-username))
     password: ((dev-cf-password))
     organization: ((migrator-organization))
@@ -183,7 +183,7 @@ resources:
   type: cf
   icon: cloud-upload
   source:
-    api: ((staging-cf-api-url))
+    api: ((staging-cf-api-endpoint))
     username: ((staging-cf-username))
     password: ((staging-cf-password))
     organization: ((migrator-organization))
