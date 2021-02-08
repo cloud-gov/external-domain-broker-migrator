@@ -28,18 +28,14 @@ progress), and if not begins the migration of the instance.
 3. Query CloudFront and IAM to get the settings of the existing service instance
 4. Transform the information from CloudFront, IAM, and the cdn-broker database 
    to create a CdnServiceInstance in the external-domain-broker's database
-5. Create an Operation record in the external-domain-broker's database to update
-   the new service instance from a migration plan to the domain-with-cdn plan
-6. Call update-service on the new instance so CAPI knows about the plan change.
-   the external-domain-broker treats this as a no-op, since the migrator already
-   changed the plan
-7. Call purge-service on the old service instance, so CAPI knows it's gone, but 
+5. Call update-service on the new instance so CAPI knows about the plan change.
+6. Call purge-service on the old service instance, so CAPI knows it's gone, but 
    the cdn-broker doesn't delete the cloudfront distribution
-8. Mark the instance as inactive in the cdn-broker database so the cdn-broker 
+7. Mark the instance as inactive in the cdn-broker database so the cdn-broker 
    doesn't try to renew its certificate
-9. Disable the external-domain-service migration plan in the space
-10. Rename the new service instance to the name of the old service instance
-11. (maybe) email the account manager to inform them the migration has completed
+8. Disable the external-domain-service migration plan in the space
+9. Rename the new service instance to the name of the old service instance
+10. (maybe) email the account manager to inform them the migration has completed
 
 ## Contributing
 
