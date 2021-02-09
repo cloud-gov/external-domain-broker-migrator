@@ -5,5 +5,7 @@ from migrator.migration import find_active_instances
 def find_domains():
     with session_handler() as session:
         routes = find_active_instances(session)
-        domains = list(map(lambda route: route.domain_external, routes))
+        domains = []
+        for route in routes:
+            domains.extend(route.domain_external_list())
         return domains
