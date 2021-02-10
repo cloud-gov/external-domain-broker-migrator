@@ -3,10 +3,20 @@ from flagger import queries, aws
 
 
 def main():
-    dry_run = "--dry-run" in sys.argv
+    args = sys.argv
+    dry_run = False
+    while len(args) > 1:
+        arg = args.pop()
+        if arg == "--dry-run":
+            dry_run = True
+        else:
+            print(f"Unknown option: {arg}\nUsage: python3 -m flagger [--dry-run]")
+            exit(1)
     if dry_run:
         print("Dry run: not making any actual changes")
-    for domain in queries.find_domains():
+    domains = queries.find_domains()
+    print(f"{len(domains)} domain(s) found")
+    for domain in domains:
         aws.create_semaphore(domain, dry_run)
 
 
