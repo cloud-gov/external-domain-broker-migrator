@@ -48,6 +48,33 @@ class FakeRoute53(FakeAWS):
         )
         return change_id
 
+    def expect_create_TXT_and_return_change_id(
+        self, domain, semaphore, target_hosted_zone_id="Z2FDTNDATAQYW2"
+    ) -> str:
+        change_id = f"{domain} ID"
+        self.stubber.add_response(
+            "change_resource_record_sets",
+            self._change_info(change_id, "PENDING"),
+            {
+                "ChangeBatch": {
+                    "Changes": [
+                        {
+                            "Action": "UPSERT",
+                            "ResourceRecordSet": {
+                                "Name": domain,
+                                "Type": "TXT",
+                                "ResourceRecords": [
+                                    {"Value": semaphore},
+                                ],
+                            },
+                        }
+                    ]
+                },
+                "HostedZoneId": "FAKEZONEID",
+            },
+        )
+        return change_id
+
     def expect_wait_for_change_insync(self, change_id: str):
         self.stubber.add_response(
             "get_change", self._change_info(change_id, "PENDING"), {"Id": change_id}

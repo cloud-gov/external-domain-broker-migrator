@@ -42,3 +42,31 @@ def test_check_connections():
     with pytest.raises(Exception):
         db.check_connections(cdn_session_maker=Session, external_domain_binding=engine)
     db.check_connections()
+
+
+def test_cdnroute_model_can_return_single_domain_in_domain_external_list(clean_db):
+    route = models.CdnRoute()
+    route.id = 12345
+    route.instance_id = "disposable-route-id"
+    route.state = "deprovisioned"
+    route.domain_external = "example.com"
+    clean_db.add(route)
+    clean_db.commit()
+
+    route = clean_db.query(models.CdnRoute).filter_by(id=12345).first()
+    assert route.domain_external_list() == ["example.com"]
+
+
+def test_cdnroute_model_can_return_multiple_domains_in_domain_external_list(clean_db):
+    route = models.CdnRoute()
+    route.id = 12345
+    route.instance_id = "disposable-route-id"
+    route.state = "deprovisioned"
+    route.domain_external = "example1.com,example2.com,example3.com"
+    clean_db.add(route)
+    clean_db.commit()
+
+    route = clean_db.query(models.CdnRoute).filter_by(id=12345).first()
+    assert sorted(route.domain_external_list()) == sorted(
+        ["example1.com", "example2.com", "example3.com"]
+    )

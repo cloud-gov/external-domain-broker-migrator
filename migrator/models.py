@@ -66,6 +66,9 @@ class CdnRoute(CdnBase):
     # provisioned
     state = sa.Column(sa.Text)
 
+    def domain_external_list(self):
+        return self.domain_external.split(",")
+
 
 class CdnCertificate(CdnBase):
     __tablename__ = "certificates"
