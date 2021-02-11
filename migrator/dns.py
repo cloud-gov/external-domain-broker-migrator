@@ -23,6 +23,21 @@ def get_cname(domain: str) -> str:
         return ""
 
 
+def get_txt(domain: str) -> list:
+    try:
+        answers = _resolver.resolve(domain, "TXT")
+        results = []
+        for answer in answers:
+            results.append(answer.to_text().strip('"'))
+        return results
+
+    except dns.resolver.NXDOMAIN:
+        return ""
+
+    except dns.resolver.NoAnswer:
+        return ""
+
+
 def acme_challenge_cname_target(domain: str) -> str:
     return f"_acme-challenge.{domain}.{_root_dns}"
 
