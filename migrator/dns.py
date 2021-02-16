@@ -50,3 +50,7 @@ def has_expected_cname(domain: str) -> bool:
     return get_cname(acme_challenge_cname_name(domain)) == acme_challenge_cname_target(
         domain
     )
+
+
+def has_expected_semaphore(domain: str) -> bool:
+    return config.SEMAPHORE in get_txt(acme_challenge_cname_name(domain))
