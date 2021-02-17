@@ -32,10 +32,10 @@ def get_txt(domain: str) -> list:
         return results
 
     except dns.resolver.NXDOMAIN:
-        return ""
+        return []
 
     except dns.resolver.NoAnswer:
-        return ""
+        return []
 
 
 def acme_challenge_cname_target(domain: str) -> str:
