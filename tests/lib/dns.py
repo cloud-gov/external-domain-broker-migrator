@@ -65,6 +65,11 @@ class DNS:
             record_type="cname", host=host, target=target, base=self.base
         )
 
+    def add_txt(self, host, value):
+        self.entries[host] = self.Entry(
+            record_type="txt", host=host, value=value, base=self.base
+        )
+
     def print_info(self):
         print("DNS information:")
         print("  Request History:")
