@@ -31,7 +31,3 @@ def get_space_id_for_service_instance_id(instance_id, client):
 def get_org_id_for_space_id(space_id, client):
     response = client.v3.spaces.get(space_id)
     return response["relationships"]["organization"]["data"]["guid"]
-
-def get_service_plan_visibility_id_for_org_id(org_id, client):
-    response = client.v3.organizations.get(org_id)
-    return response["relationships"][""]
