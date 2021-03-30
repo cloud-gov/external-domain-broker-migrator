@@ -47,6 +47,14 @@ def test_enable_service_plan_2(fake_requests, fake_cf_client):
     )
     res = cf.enable_plan_for_org("foo", "bar", fake_cf_client)
 
+def test_disable_service_plan_2(fake_requests, fake_cf_client):
+    response_body = ""
+    fake_requests.delete(
+        "http://localhost/v2/service_plan_visibilities/new-plan-visibiliy-guid",
+        text=response_body
+    )
+    res = cf.disable_plan_for_org("new-plan-visibiliy-guid", fake_cf_client)
+
 
 def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
     response_body = """
