@@ -14,11 +14,13 @@ def get_cf_client(config):
 
 
 def enable_plan_for_org(plan_id, org_id, client):
-    return client.v2.service_plan_visibilities.create(plan_id, org_id)
+    response = client.v2.service_plan_visibilities.create(plan_id, org_id)
+    return response["metadata"]["guid"]
 
 
-def disable_plan_for_org(plan_id, org_id, client):
-    pass
+# Takes in service plan visibility GUID
+def disable_plan_for_org(spv_id, client):
+    return client.v2.service_plan_visibilities.remove(spv_id)
 
 
 def get_space_id_for_service_instance_id(instance_id, client):
@@ -29,3 +31,7 @@ def get_space_id_for_service_instance_id(instance_id, client):
 def get_org_id_for_space_id(space_id, client):
     response = client.v3.spaces.get(space_id)
     return response["relationships"]["organization"]["data"]["guid"]
+
+def get_service_plan_visibility_id_for_org_id(org_id, client):
+    response = client.v3.organizations.get(org_id)
+    return response["relationships"][""]

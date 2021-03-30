@@ -332,3 +332,27 @@ def test_migration_enables_plan_in_org(clean_db, fake_cf_client, fake_requests):
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
     assert last_request.url == "http://localhost/v2/service_plan_visibilities"
+
+
+def test_migration_disables_plan_in_org(clean_db, fake_cf_client, fake_requests):
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.instance_id = "asdf-asdf"
+    route.domain_external = "example.com,foo.example.com"
+    route.dist_id = "some-distribution-id"
+    migration = Migration(route, clean_db, fake_cf_client)
+    migration._space_id = "my-space-guid"
+    migration._org_id = "my-org-guid"
+    migration._service_plan_visibility_id = "my-service-plan-visibility"
+
+    response_body = ""
+    fake_requests.delete(
+        "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility",
+        text=response_body
+    )
+
+    migration.disable_migration_service_plan()
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert last_request.url == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
