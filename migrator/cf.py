@@ -19,12 +19,12 @@ def enable_plan_for_org(plan_id, org_id, client):
 
 
 def get_service_plan_visibility_ids_for_org(plan_id, org_id, client):
-    response = client.v2.service_plan_visibilities.list(
+    service_plan_visibilities = client.v2.service_plan_visibilities.list(
         service_plan_guid=plan_id, organization_guid=org_id
     )
     return [
         service_plan_visibility["metadata"]["guid"]
-        for service_plan_visibility in response
+        for service_plan_visibility in service_plan_visibilities
     ]
 
 

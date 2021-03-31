@@ -29,7 +29,6 @@ class Migration:
         self._external_domain_broker_service_instance = None
         self._space_id = None
         self._org_id = None
-        self._service_plan_visibility_ids = None
 
     @property
     def has_valid_dns(self):
