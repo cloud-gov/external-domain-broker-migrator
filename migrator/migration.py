@@ -29,7 +29,7 @@ class Migration:
         self._external_domain_broker_service_instance = None
         self._space_id = None
         self._org_id = None
-        self._service_plan_visibility_id = None
+        self._service_plan_visibility_ids = None
 
     @property
     def has_valid_dns(self):
@@ -121,14 +121,18 @@ class Migration:
             self._org_id = cf.get_org_id_for_space_id(self.space_id, self.client)
         return self._org_id
 
-    def enable_migration_service_plan(self):
-        self._service_plan_visibility_id = cf.enable_plan_for_org(
+    @property
+    def service_plan_visibility_ids(self):
+        return cf.get_service_plan_visibility_ids_for_org(
             migration_plan_guid, self.org_id, self.client
         )
 
+    def enable_migration_service_plan(self):
+        cf.enable_plan_for_org(migration_plan_guid, self.org_id, self.client)
+
     def disable_migration_service_plan(self):
-        cf.disable_plan_for_org(self._service_plan_visibility_id, self.client)
-        self._service_plan_visibility_id = None
+        for service_plan_visibility_id in self.service_plan_visibility_ids:
+            cf.disable_plan_for_org(service_plan_visibility_id, self.client)
 
     def upsert_dns(self):
         change_ids = []

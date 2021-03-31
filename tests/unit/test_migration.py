@@ -343,16 +343,47 @@ def test_migration_disables_plan_in_org(clean_db, fake_cf_client, fake_requests)
     migration = Migration(route, clean_db, fake_cf_client)
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
-    migration._service_plan_visibility_id = "my-service-plan-visibility"
 
-    response_body = ""
+    response_body_get = """
+{
+   "total_results": 1,
+   "total_pages": 1,
+   "prev_url": null,
+   "next_url": null,
+   "resources": [
+      {
+         "metadata": {
+            "guid": "my-service-plan-visibility",
+            "url": "/v2/service_plan_visibilities/my-service-plan-visibility",
+            "created_at": "2021-02-22T21:15:57Z",
+            "updated_at": "2021-02-22T21:15:57Z"
+         },
+         "entity": {
+            "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
+            "organization_guid": "my-org-guid",
+            "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+            "organization_url": "/v2/organizations/my-org-guid"
+         }
+      }
+   ]
+}
+    """
+    fake_requests.get(
+        "http://localhost/v2/service_plan_visibilities?q=organization_guid:my-org-guid&q=service_plan_guid:739e78F5-a919-46ef-9193-1293cc086c17",
+        text=response_body_get,
+    )
+
+    response_body_delete = ""
     fake_requests.delete(
         "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility",
-        text=response_body
+        text=response_body_delete,
     )
 
     migration.disable_migration_service_plan()
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert last_request.url == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
+    assert (
+        last_request.url
+        == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
+    )

@@ -18,9 +18,18 @@ def enable_plan_for_org(plan_id, org_id, client):
     return response["metadata"]["guid"]
 
 
-# Takes in service plan visibility GUID
-def disable_plan_for_org(spv_id, client):
-    return client.v2.service_plan_visibilities.remove(spv_id)
+def get_service_plan_visibility_ids_for_org(plan_id, org_id, client):
+    response = client.v2.service_plan_visibilities.list(
+        service_plan_guid=plan_id, organization_guid=org_id
+    )
+    return [
+        service_plan_visibility["metadata"]["guid"]
+        for service_plan_visibility in response
+    ]
+
+
+def disable_plan_for_org(service_plan_visibility_id, client):
+    return client.v2.service_plan_visibilities.remove(service_plan_visibility_id)
 
 
 def get_space_id_for_service_instance_id(instance_id, client):
