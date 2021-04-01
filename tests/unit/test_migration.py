@@ -387,3 +387,157 @@ def test_migration_disables_plan_in_org(clean_db, fake_cf_client, fake_requests)
         last_request.url
         == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
     )
+
+
+def test_create_bare_migrator_instance_in_org_spaces(
+    clean_db, fake_cf_client, fake_requests
+):
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.instance_id = "asdf-asdf"
+    route.domain_external = "example.com,foo.example.com"
+    route.dist_id = "some-distribution-id"
+    migration = Migration(route, clean_db, fake_cf_client)
+    migration._space_id = "my-space-guid"
+    migration._org_id = "my-org-guid"
+
+    response_body_get_spaces = """
+{
+   "pagination": {
+      "total_results": 2,
+      "total_pages": 1,
+      "first": {
+         "href": "https://api.fr.cloud.gov/v3/spaces?organization_guids=my-org-guid&page=1&per_page=50"
+      },
+      "last": {
+         "href": "https://api.fr.cloud.gov/v3/spaces?organization_guids=my-org-guid&page=1&per_page=50"
+      },
+      "next": null,
+      "previous": null
+   },
+   "resources": [
+     {
+         "guid": "my-space-1-guid",
+         "created_at": "2021-01-27T20:52:07Z",
+         "updated_at": "2021-01-27T20:52:07Z",
+         "name": "space-1",
+         "relationships": {
+            "organization": {
+               "data": {
+                  "guid": "my-org-guid"
+               }
+            },
+            "quota": {
+               "data": null
+            }
+         },
+         "metadata": {
+            "labels": {},
+            "annotations": {}
+         },
+         "links": {
+            "self": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-1-guid"
+            },
+            "organization": {
+               "href": "https://api.fr.cloud.gov/v3/organizations/my-org-guid"
+            },
+            "features": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-1-guid/features"
+            },
+            "apply_manifest": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-1-guid/actions/apply_manifest",
+               "method": "POST"
+            }
+         }
+      },
+      {
+         "guid": "my-space-2-guid",
+         "created_at": "2021-02-04T16:26:06Z",
+         "updated_at": "2021-02-04T16:26:06Z",
+         "name": "space-2",
+         "relationships": {
+            "organization": {
+               "data": {
+                  "guid": "my-org-guid"
+               }
+            },
+            "quota": {
+               "data": null
+            }
+         },
+         "metadata": {
+            "labels": {},
+            "annotations": {}
+         },
+         "links": {
+            "self": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-2-guid"
+            },
+            "organization": {
+               "href": "https://api.fr.cloud.gov/v3/organizations/my-org-guid"
+            },
+            "features": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-2-guid/features"
+            },
+            "apply_manifest": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-2-guid/actions/apply_manifest",
+               "method": "POST"
+            }
+         }
+      }
+   ]
+}
+    """
+
+    fake_requests.get(
+        "http://localhost/v3/spaces?organization_guids=my-org-guid",
+        text=response_body_get_spaces,
+    )
+
+    response_body_create_instance = """
+{
+  "metadata": {
+    "guid": "my-migrator-instance",
+    "url": "/v2/service_instances/my-migrator-instance",
+    "created_at": "2016-06-08T16:41:29Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "external-domain-broker-migrator",
+    "credentials": {
+
+    },
+    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
+    "space_guid": "my-space-1-guid",
+    "gateway_data": null,
+    "dashboard_url": null,
+    "type": "managed_service_instance",
+    "last_operation": {
+      "type": "create",
+      "state": "in progress",
+      "description": "",
+      "updated_at": "2016-06-08T16:41:26Z",
+      "created_at": "2016-06-08T16:41:29Z"
+    },
+    "space_url": "/v2/spaces/my-space-1-guid",
+    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
+    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
+    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
+    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
+    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+  }
+}
+    """
+    fake_requests.post(
+        "http://localhost/v2/service_instances", text=response_body_create_instance
+    )
+
+    migration.create_bare_migrator_instance_in_org_spaces()
+
+    assert fake_requests.called
+    second_last_request = fake_requests.request_history[-2]
+    last_request = fake_requests.request_history[-1]
+    assert second_last_request.url == "http://localhost/v2/service_instances"
+    assert last_request.url == "http://localhost/v2/service_instances"

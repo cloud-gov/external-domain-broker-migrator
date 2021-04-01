@@ -40,3 +40,18 @@ def get_space_id_for_service_instance_id(instance_id, client):
 def get_org_id_for_space_id(space_id, client):
     response = client.v3.spaces.get(space_id)
     return response["relationships"]["organization"]["data"]["guid"]
+
+
+def get_all_space_ids_for_org(org_id, client):
+    spaces = client.v3.spaces.list(
+        organization_guids=[
+            org_id,
+        ]
+    )
+    return [space["guid"] for space in spaces]
+
+
+def create_bare_migrator_service_instance_in_space(
+    space_id, plan_id, instance_name, client
+):
+    return client.v2.service_instances.create(space_id, plan_id, instance_name)

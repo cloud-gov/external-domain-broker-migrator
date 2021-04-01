@@ -148,3 +148,102 @@ def test_get_org_id_for_space_id(fake_cf_client, fake_requests):
 """
     fake_requests.get("http://localhost/v3/spaces/my-space-guid", text=response_body)
     assert cf.get_org_id_for_space_id("my-space-guid", fake_cf_client) == "my-org-guid"
+
+
+def test_get_all_space_ids_for_org_3(fake_cf_client, fake_requests):
+    response_body = """
+{
+   "pagination": {
+      "total_results": 2,
+      "total_pages": 1,
+      "first": {
+         "href": "https://api.fr.cloud.gov/v3/spaces?organization_guids=my-org-guid&page=1&per_page=50"
+      },
+      "last": {
+         "href": "https://api.fr.cloud.gov/v3/spaces?organization_guids=my-org-guid&page=1&per_page=50"
+      },
+      "next": null,
+      "previous": null
+   },
+   "resources": [
+     {
+         "guid": "my-space-1-guid",
+         "created_at": "2021-01-27T20:52:07Z",
+         "updated_at": "2021-01-27T20:52:07Z",
+         "name": "space-1",
+         "relationships": {
+            "organization": {
+               "data": {
+                  "guid": "my-org-guid"
+               }
+            },
+            "quota": {
+               "data": null
+            }
+         },
+         "metadata": {
+            "labels": {},
+            "annotations": {}
+         },
+         "links": {
+            "self": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-1-guid"
+            },
+            "organization": {
+               "href": "https://api.fr.cloud.gov/v3/organizations/my-org-guid"
+            },
+            "features": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-1-guid/features"
+            },
+            "apply_manifest": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-1-guid/actions/apply_manifest",
+               "method": "POST"
+            }
+         }
+      },
+      {
+         "guid": "my-space-2-guid",
+         "created_at": "2021-02-04T16:26:06Z",
+         "updated_at": "2021-02-04T16:26:06Z",
+         "name": "space-2",
+         "relationships": {
+            "organization": {
+               "data": {
+                  "guid": "my-org-guid"
+               }
+            },
+            "quota": {
+               "data": null
+            }
+         },
+         "metadata": {
+            "labels": {},
+            "annotations": {}
+         },
+         "links": {
+            "self": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-2-guid"
+            },
+            "organization": {
+               "href": "https://api.fr.cloud.gov/v3/organizations/my-org-guid"
+            },
+            "features": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-2-guid/features"
+            },
+            "apply_manifest": {
+               "href": "https://api.fr.cloud.gov/v3/spaces/my-space-2-guid/actions/apply_manifest",
+               "method": "POST"
+            }
+         }
+      }
+   ]
+}
+    """
+
+    fake_requests.get(
+        "http://localhost/v3/spaces?organization_guids=my-org-guid", text=response_body
+    )
+    assert cf.get_all_space_ids_for_org("my-org-guid", fake_cf_client) == [
+        "my-space-1-guid",
+        "my-space-2-guid",
+    ]
