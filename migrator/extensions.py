@@ -17,3 +17,4 @@ iam_commercial = commercial_session.client("iam")
 route53 = commercial_session.client("route53")
 
 migration_plan_guid = "739e78F5-a919-46ef-9193-1293cc086c17"
+migration_plan_instance_name = "external-domain-broker-migrator"
