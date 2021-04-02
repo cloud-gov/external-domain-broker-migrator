@@ -1,3 +1,5 @@
+import time
+
 from migrator import cf
 from migrator.dns import has_expected_cname
 from migrator.db import session_handler
@@ -8,6 +10,7 @@ from migrator.extensions import (
     route53,
     migration_plan_guid,
     migration_plan_instance_name,
+    migration_instance_check_timeout,
 )
 from migrator.models import CdnRoute
 
@@ -27,7 +30,7 @@ class Migration:
         self._cloudfront_distribution_data = None
         self.session = session
         self.client = client
-        self._external_domain_broker_service_instance = None
+        self.external_domain_broker_service_instance = None
         self._space_id = None
         self._org_id = None
 
@@ -134,13 +137,42 @@ class Migration:
         for service_plan_visibility_id in self.service_plan_visibility_ids:
             cf.disable_plan_for_org(service_plan_visibility_id, self.client)
 
-    def create_bare_migrator_instance_in_org_space(self):
-        cf.create_bare_migrator_service_instance_in_space(
+    def create_bare_migrator_instance_in_org_space(
+        self, timeout=migration_instance_check_timeout
+    ):
+        instance_info = cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
             migration_plan_guid,
             migration_plan_instance_name,
             self.client,
         )
+
+        if instance_info["state"] == "failed":
+            raise Exception("Creation of migrator service instance failed.")
+
+        self.external_domain_broker_service_instance = instance_info["guid"]
+
+        timeout_counter = 0
+
+        while timeout_counter <= migration_instance_check_timeout:
+            status = cf.get_migrator_service_instance_status(
+                self.external_domain_broker_service_instance, self.client
+            )
+
+            if status == "succeeded":
+                break
+
+            if status == "failed":
+                raise Exception("Creation of migrator service instance failed.")
+
+            # Wait 10 seconds because CAPI only polls service instance status
+            # every 10 seconds internally.
+            timeout_counter += 10
+
+            if timeout_counter <= migration_instance_check_timeout:
+                raise Exception("Checking migrator service instance timed out.")
+
+            time.sleep(10)
 
     def upsert_dns(self):
         change_ids = []
