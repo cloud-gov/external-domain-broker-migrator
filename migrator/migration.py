@@ -135,13 +135,12 @@ class Migration:
             cf.disable_plan_for_org(service_plan_visibility_id, self.client)
 
     def create_bare_migrator_instance_in_org_spaces(self):
-        for space_id in cf.get_all_space_ids_for_org(self.org_id, self.client):
-            cf.create_bare_migrator_service_instance_in_space(
-                self.space_id,
-                migration_plan_guid,
-                migration_plan_instance_name,
-                self.client,
-            )
+        cf.create_bare_migrator_service_instance_in_space(
+            self.space_id,
+            migration_plan_guid,
+            migration_plan_instance_name,
+            self.client,
+        )
 
     def upsert_dns(self):
         change_ids = []
