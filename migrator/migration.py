@@ -10,7 +10,6 @@ from migrator.extensions import (
     route53,
     migration_plan_guid,
     migration_plan_instance_name,
-    migration_instance_check_timeout,
 )
 from migrator.models import CdnRoute
 
