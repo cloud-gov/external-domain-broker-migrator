@@ -389,7 +389,7 @@ def test_migration_disables_plan_in_org(clean_db, fake_cf_client, fake_requests)
     )
 
 
-def test_create_bare_migrator_instance_in_org_spaces(
+def test_create_bare_migrator_instance_in_org_space(
     clean_db, fake_cf_client, fake_requests
 ):
     route = CdnRoute()
@@ -440,7 +440,7 @@ def test_create_bare_migrator_instance_in_org_spaces(
         "http://localhost/v2/service_instances", text=response_body_create_instance
     )
 
-    migration.create_bare_migrator_instance_in_org_spaces()
+    migration.create_bare_migrator_instance_in_org_space()
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
