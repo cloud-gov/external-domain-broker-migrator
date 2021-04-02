@@ -134,7 +134,7 @@ class Migration:
         for service_plan_visibility_id in self.service_plan_visibility_ids:
             cf.disable_plan_for_org(service_plan_visibility_id, self.client)
 
-    def create_bare_migrator_instance_in_org_spaces(self):
+    def create_bare_migrator_instance_in_org_space(self):
         cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
             migration_plan_guid,
