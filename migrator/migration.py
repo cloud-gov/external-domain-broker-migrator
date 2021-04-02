@@ -10,7 +10,6 @@ from migrator.extensions import (
     route53,
     migration_plan_guid,
     migration_plan_instance_name,
-    migration_instance_check_timeout,
 )
 from migrator.models import CdnRoute
 
@@ -137,9 +136,7 @@ class Migration:
         for service_plan_visibility_id in self.service_plan_visibility_ids:
             cf.disable_plan_for_org(service_plan_visibility_id, self.client)
 
-    def create_bare_migrator_instance_in_org_space(
-        self, timeout=migration_instance_check_timeout
-    ):
+    def create_bare_migrator_instance_in_org_space(self):
         instance_info = cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
             migration_plan_guid,
@@ -147,32 +144,24 @@ class Migration:
             self.client,
         )
 
-        if instance_info["state"] == "failed":
-            raise Exception("Creation of migrator service instance failed.")
-
         self.external_domain_broker_service_instance = instance_info["guid"]
 
-        timeout_counter = 0
+        retries = config.SERVICE_CHANGE_RETRY_COUNT
 
-        while timeout_counter <= migration_instance_check_timeout:
+        while retries:
             status = cf.get_migrator_service_instance_status(
                 self.external_domain_broker_service_instance, self.client
             )
 
             if status == "succeeded":
-                break
+                return
 
             if status == "failed":
                 raise Exception("Creation of migrator service instance failed.")
+            retries -= 1
+            time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
 
-            # Wait 10 seconds because CAPI only polls service instance status
-            # every 10 seconds internally.
-            timeout_counter += 10
-
-            if timeout_counter <= migration_instance_check_timeout:
-                raise Exception("Checking migrator service instance timed out.")
-
-            time.sleep(10)
+        raise Exception("Checking migrator service instance timed out.")
 
     def upsert_dns(self):
         change_ids = []

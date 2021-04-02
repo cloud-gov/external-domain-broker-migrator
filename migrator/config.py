@@ -40,6 +40,8 @@ class LocalConfig(Config):
         self.CF_USERNAME = "fake-username"
         self.CF_PASSWORD = "fake-password"
         self.CF_API_ENDPOINT = "http://localhost"
+        self.SERVICE_CHANGE_RETRY_COUNT = 2
+        self.SERVICE_CHANGE_POLL_TIME_SECONDS = 0.01
 
 
 class AppConfig(Config):
@@ -65,6 +67,8 @@ class AppConfig(Config):
         self.CF_API_ENDPOINT = self.env_parser("CF_API_ENDPOINT")
         self.AWS_POLL_WAIT_TIME_IN_SECONDS = 60
         self.AWS_POLL_MAX_ATTEMPTS = 10
+        self.SERVICE_CHANGE_RETRY_COUNT = 60
+        self.SERVICE_CHANGE_POLL_TIME_SECONDS = 10
 
 
 class DevelopmentConfig(AppConfig):
