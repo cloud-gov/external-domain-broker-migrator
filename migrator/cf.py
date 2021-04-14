@@ -43,7 +43,11 @@ def get_org_id_for_space_id(space_id, client):
 
 
 def get_all_space_ids_for_org(org_id, client):
-    spaces = client.v3.spaces.list(organization_guids=[org_id,])
+    spaces = client.v3.spaces.list(
+        organization_guids=[
+            org_id,
+        ]
+    )
     return [space["guid"] for space in spaces]
 
 
@@ -60,3 +64,7 @@ def create_bare_migrator_service_instance_in_space(
 def get_migrator_service_instance_status(instance_id, client):
     response = client.v2.service_instances.get(instance_id)
     return response["entity"]["last_operation"]["state"]
+
+
+def update_existing_cd_domain_service_instance(instance_id, params, client):
+    client.v2.service_instanes.update(instance_id, params=params)

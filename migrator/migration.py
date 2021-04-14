@@ -109,6 +109,19 @@ class Migration:
             "IAMCertificateId"
         ]
 
+    # TODO:  Check that this is correct
+    @property
+    def iam_certificate_name(self):
+        return self.cloudfront_distribution_config["ViewerCertificate"]["Certificate"]
+
+
+    # TODO:  Check that this is correct
+    @property
+    def iam_certificate_arn(self):
+        return self.cloudfront_distribution_config["ViewerCertificate"][
+            "ACMCertificateArn"
+        ]
+
     @property
     def space_id(self):
         if self._space_id is None:
@@ -162,6 +175,25 @@ class Migration:
             time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
 
         raise Exception("Checking migrator service instance timed out.")
+
+    def update_existing_cd_domain(self):
+        params = {
+            "origin": self.origin_hostname,
+            "path": self.origin_path,
+            "forwarded_cookies": self.forwarded_cookies,
+            "forward_cookie_policy": self.forward_cookie_policy,
+            "forwarded_headers": self.forwarded_headers,
+            "insecure_origin": False, # TODO:  Pull the correct info
+            "error_responses": self.custom_error_responses,
+            "cloudfront_distribution_id": self.cloudfront_distribution_id,
+            "cloudfront_distribution_arn": self.cloudfront_distribution_arn,
+            "iam_server_certificate_name": self.iam_certificate_name,
+            "iam_server_certificate_id": self.iam_certificate_id,
+            "iam_server_certificate_arn": self.iam_certificate_arn,
+            "domain_internal": self.domain_internal,
+        }
+
+        cf.update_existing_cd_domain_service_instance(self.instance_id, params, client)
 
     def upsert_dns(self):
         change_ids = []
