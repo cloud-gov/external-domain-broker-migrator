@@ -95,6 +95,13 @@ class Migration:
         return self.interesting_origin["CustomOriginConfig"]["OriginProtocolPolicy"]
 
     @property
+    def insecure_origin(self):
+        if self.origin_protocol_policy == "http-only":
+            return True
+
+        return False
+
+    @property
     def interesting_origin(self):
         # this ignores the s3 bucket currently used for Lets Encrypt validation
         # it still makes an assumption that there's only _one_ interesting origin
@@ -109,13 +116,12 @@ class Migration:
             "IAMCertificateId"
         ]
 
-    # TODO:  Check that this is correct
     @property
     def iam_certificate_name(self):
-        return self.cloudfront_distribution_config["ViewerCertificate"]["Certificate"]
+        return self.cloudfront_distribution_config["ViewerCertificate"][
+            "Certificate"
+        ]
 
-
-    # TODO:  Check that this is correct
     @property
     def iam_certificate_arn(self):
         return self.cloudfront_distribution_config["ViewerCertificate"][
@@ -171,19 +177,20 @@ class Migration:
 
             if status == "failed":
                 raise Exception("Creation of migrator service instance failed.")
+
             retries -= 1
             time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
 
         raise Exception("Checking migrator service instance timed out.")
 
-    def update_existing_cd_domain(self):
+    def update_existing_cdn_domain(self):
         params = {
             "origin": self.origin_hostname,
             "path": self.origin_path,
             "forwarded_cookies": self.forwarded_cookies,
             "forward_cookie_policy": self.forward_cookie_policy,
             "forwarded_headers": self.forwarded_headers,
-            "insecure_origin": False, # TODO:  Pull the correct info
+            "insecure_origin": self.insecure_origin,
             "error_responses": self.custom_error_responses,
             "cloudfront_distribution_id": self.cloudfront_distribution_id,
             "cloudfront_distribution_arn": self.cloudfront_distribution_arn,
@@ -193,7 +200,23 @@ class Migration:
             "domain_internal": self.domain_internal,
         }
 
-        cf.update_existing_cd_domain_service_instance(self.instance_id, params, client)
+        retries = config.SERVICE_CHANGE_RETRY_COUNT
+
+        while retries:
+            status = cf.update_existing_cdn_domain_service_instance(
+                self.instance_id, params, client
+            )
+
+            if status == "succeeded":
+                return
+
+            if status == "failed":
+                raise Exception("Creation of migrator service instance failed.")
+
+            retries -= 1
+            time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
+
+        raise Exception("Checking migrator service instance timed out.")
 
     def upsert_dns(self):
         change_ids = []
