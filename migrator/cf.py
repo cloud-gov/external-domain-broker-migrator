@@ -58,6 +58,7 @@ def create_bare_migrator_service_instance_in_space(
     return {
         "guid": response["metadata"]["guid"],
         "state": response["entity"]["last_operation"]["state"],
+        "type": response["entity"]["last_operation"]["type"],
     }
 
 
@@ -66,5 +67,10 @@ def get_migrator_service_instance_status(instance_id, client):
     return response["entity"]["last_operation"]["state"]
 
 
-def update_existing_cd_domain_service_instance(instance_id, params, client):
-    client.v2.service_instanes.update(instance_id, params=params)
+def update_existing_cdn_domain_service_instance(instance_id, params, client):
+    response = client.v2.service_instanes.update(instance_id, params=params)
+    return {
+        "guid": response["metadata"]["guid"],
+        "state": response["entity"]["last_operation"]["state"],
+        "type": response["entity"]["last_operation"]["type"],
+    }

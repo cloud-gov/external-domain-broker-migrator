@@ -297,6 +297,7 @@ def test_create_bare_migrator_service_instance_in_space(fake_cf_client, fake_req
 
     assert response["guid"] == "my-migrator-instance"
     assert response["state"] == "in progress"
+    assert response["type"] == "create"
 
 
 def test_get_migrator_service_instance_status(fake_cf_client, fake_requests):
@@ -344,3 +345,63 @@ def test_get_migrator_service_instance_status(fake_cf_client, fake_requests):
         cf.get_migrator_service_instance_status("my-migrator-instance", fake_cf_client)
         == "succeeded"
     )
+
+
+def update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):
+    response_body = """
+{
+  "metadata": {
+    "guid": "my-migrator-instance",
+    "url": "/v2/service_instances/my-migrator-instance",
+    "created_at": "2016-06-08T16:41:30Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "external-domain-broker-migrator",
+    "credentials": {
+      "creds-key-41": "creds-val-41"
+    },
+    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
+    "space_guid": "my-space-guid",
+    "gateway_data": null,
+    "dashboard_url": null,
+    "type": "managed_service_instance",
+    "last_operation": {
+      "type": "update",
+      "state": "in progress",
+      "description": "",
+      "updated_at": "2016-06-08T16:41:30Z",
+      "created_at": "2016-06-08T16:41:30Z"
+    },
+    "tags": [
+
+    ],
+    "maintenance_info": {
+      "version": "2.1.0",
+      "description": "OS image update.\nExpect downtime."
+    },
+    "space_url": "/v2/spaces/my-space-guid",
+    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
+    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
+    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
+    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
+    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+  }
+}
+    """
+
+    fake_requests.put(
+        "http://localhost/v2/service_instances/my-migrator-instance", text=response_body
+    )
+
+    response = cf.create_bare_migrator_service_instance_in_space(
+        "my-space-guid",
+        "739e78F5-a919-46ef-9193-1293cc086c17",
+        "external-domain-broker-migrator",
+        fake_cf_client,
+    )
+
+    assert response["guid"] == "my-migrator-instance"
+    assert response["state"] == "in progress"
+    assert response["type"] == "update"
