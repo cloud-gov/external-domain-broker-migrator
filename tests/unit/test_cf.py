@@ -395,7 +395,7 @@ def update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):
         "http://localhost/v2/service_instances/my-migrator-instance", text=response_body
     )
 
-    response = cf.create_bare_migrator_service_instance_in_space(
+    response = cf.update_existing_cdn_domain_service_instance(
         "my-space-guid",
         "739e78F5-a919-46ef-9193-1293cc086c17",
         "external-domain-broker-migrator",

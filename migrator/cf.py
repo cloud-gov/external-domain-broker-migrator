@@ -68,7 +68,7 @@ def get_migrator_service_instance_status(instance_id, client):
 
 
 def update_existing_cdn_domain_service_instance(instance_id, params, client):
-    response = client.v2.service_instanes.update(instance_id, params=params)
+    response = client.v2.service_instances.update(instance_id, parameters=params)
     return {
         "guid": response["metadata"]["guid"],
         "state": response["entity"]["last_operation"]["state"],

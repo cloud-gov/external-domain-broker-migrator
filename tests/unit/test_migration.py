@@ -696,17 +696,75 @@ def test_create_bare_migrator_instance_in_org_space_timeout_failure(
     assert len(fake_requests.request_history) == 3
 
 
-def test_update_existing_cdn_domain(
-    clean_db, fake_cf_client, fake_requests
-):
+def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests):
     route = CdnRoute()
     route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
+    route.instance_id = "my-route-instance-id"
     route.domain_external = "example.com,foo.example.com"
     route.dist_id = "some-distribution-id"
     migration = Migration(route, clean_db, fake_cf_client)
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
+    migration.external_domain_broker_service_instance = "my-migrator-instance"
+    migration._cloudfront_distribution_data = {
+        "Id": "my-cloudfront-distribution",
+        "ARN": "aws:arn:cloudfront:my-cloudfront-distribution",
+        "DistributionConfig": {
+            "Origins": {
+                "Items": [
+                    {
+                        "Id": "my-custom-domain-id",
+                        "DomainName": "example.gov",
+                        "OriginPath": "example.gov",
+                        "S3OriginConfig": None,
+                        "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
+                    },
+                ]
+            },
+            "DefaultCacheBehavior": {
+                "ForwardedValues": {
+                    "QueryString": False,
+                    "Cookies": {
+                        "Forward": "whitelist",
+                        "WhitelistedNames": {
+                            "Quantity": 1,
+                            "Items": [
+                                "white-listed-name",
+                            ],
+                        },
+                    },
+                    "Headers": {
+                        "Quantity": 1,
+                        "Items": [
+                            "white-listed-name-header",
+                        ],
+                    },
+                }
+            },
+            "CustomErrorResponses": {
+                "Quantity": 2,
+                "Items": [
+                    {
+                        "ErrorCode": 404,
+                        "ResponsePagePath": "/four-oh-four",
+                        "ResponseCode": "404",
+                        "ErrorCachingMinTTL": 300,
+                    },
+                    {
+                        "ErrorCode": 500,
+                        "ResponsePagePath": "/five-hundred",
+                        "ResponseCode": "500",
+                        "ErrorCachingMinTTL": 300,
+                    },
+                ],
+            },
+            "ViewerCertificate": {
+                "IAMCertificateId": "my-cloudfront-cert-id",
+                "ACMCertificateArn": "aws:arn:acm:my-cloudfront-cert",
+                "Certificate": "my-cloudfront-cert",
+            },
+        },
+    }
 
     response_body_update_instance = """
 {
@@ -784,6 +842,11 @@ def test_update_existing_cdn_domain(
     """
 
     fake_requests.put(
+        "http://localhost/v2/service_instances/my-migrator-instance",
+        text=response_body_update_instance,
+    )
+
+    fake_requests.get(
         "http://localhost/v2/service_instances/my-migrator-instance",
         text=response_body_check_instance,
     )

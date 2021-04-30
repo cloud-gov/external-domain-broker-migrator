@@ -118,9 +118,7 @@ class Migration:
 
     @property
     def iam_certificate_name(self):
-        return self.cloudfront_distribution_config["ViewerCertificate"][
-            "Certificate"
-        ]
+        return self.cloudfront_distribution_config["ViewerCertificate"]["Certificate"]
 
     @property
     def iam_certificate_arn(self):
@@ -200,11 +198,15 @@ class Migration:
             "domain_internal": self.domain_internal,
         }
 
+        cf.update_existing_cdn_domain_service_instance(
+            self.external_domain_broker_service_instance, params, self.client
+        )
+
         retries = config.SERVICE_CHANGE_RETRY_COUNT
 
         while retries:
-            status = cf.update_existing_cdn_domain_service_instance(
-                self.instance_id, params, client
+            status = cf.get_migrator_service_instance_status(
+                self.external_domain_broker_service_instance, self.client
             )
 
             if status == "succeeded":
