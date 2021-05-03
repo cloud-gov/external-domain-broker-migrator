@@ -30,8 +30,8 @@ def test_get_client(fake_requests):
 def test_enable_service_plan_2(fake_requests, fake_cf_client):
     response_body = """{
   "metadata": {
-    "guid": "new-plan-visibiliy-guid",
-    "url": "/v2/service_plan_visibilities/new-plan-visibiliy-guid",
+    "guid": "new-plan-visibility-guid",
+    "url": "/v2/service_plan_visibilities/new-plan-visibility-guid",
     "created_at": "2016-06-08T16:41:31Z",
     "updated_at": "2016-06-08T16:41:26Z"
   },
@@ -47,14 +47,25 @@ def test_enable_service_plan_2(fake_requests, fake_cf_client):
     )
     res = cf.enable_plan_for_org("foo", "bar", fake_cf_client)
 
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert last_request.url == "http://localhost/v2/service_plan_visibilities"
+
 
 def test_disable_service_plan_2(fake_requests, fake_cf_client):
     response_body = ""
     fake_requests.delete(
-        "http://localhost/v2/service_plan_visibilities/new-plan-visibiliy-guid",
+        "http://localhost/v2/service_plan_visibilities/new-plan-visibility-guid",
         text=response_body,
     )
-    res = cf.disable_plan_for_org("new-plan-visibiliy-guid", fake_cf_client)
+    res = cf.disable_plan_for_org("new-plan-visibility-guid", fake_cf_client)
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert (
+        last_request.url
+        == "http://localhost/v2/service_plan_visibilities/new-plan-visibility-guid"
+    )
 
 
 def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
@@ -107,6 +118,13 @@ def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
         == "my-space-guid"
     )
 
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert (
+        last_request.url
+        == "http://localhost/v2/service_instances/some-service-instance-id"
+    )
+
 
 def test_get_org_id_for_space_id(fake_cf_client, fake_requests):
     response_body = """
@@ -148,6 +166,10 @@ def test_get_org_id_for_space_id(fake_cf_client, fake_requests):
 """
     fake_requests.get("http://localhost/v3/spaces/my-space-guid", text=response_body)
     assert cf.get_org_id_for_space_id("my-space-guid", fake_cf_client) == "my-org-guid"
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert last_request.url == "http://localhost/v3/spaces/my-space-guid"
 
 
 def test_get_all_space_ids_for_org_3(fake_cf_client, fake_requests):
@@ -248,6 +270,12 @@ def test_get_all_space_ids_for_org_3(fake_cf_client, fake_requests):
         "my-space-2-guid",
     ]
 
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert (
+        last_request.url == "http://localhost/v3/spaces?organization_guids=my-org-guid"
+    )
+
 
 def test_create_bare_migrator_service_instance_in_space(fake_cf_client, fake_requests):
     response_body = """
@@ -294,6 +322,10 @@ def test_create_bare_migrator_service_instance_in_space(fake_cf_client, fake_req
         "external-domain-broker-migrator",
         fake_cf_client,
     )
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert last_request.url == "http://localhost/v2/service_instances"
 
     assert response["guid"] == "my-migrator-instance"
     assert response["state"] == "in progress"
@@ -344,6 +376,12 @@ def test_get_migrator_service_instance_status(fake_cf_client, fake_requests):
     assert (
         cf.get_migrator_service_instance_status("my-migrator-instance", fake_cf_client)
         == "succeeded"
+    )
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert (
+        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
     )
 
 
@@ -400,6 +438,12 @@ def update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):
         "739e78F5-a919-46ef-9193-1293cc086c17",
         "external-domain-broker-migrator",
         fake_cf_client,
+    )
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert (
+        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
     )
 
     assert response["guid"] == "my-migrator-instance"
