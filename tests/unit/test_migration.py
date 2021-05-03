@@ -687,6 +687,7 @@ def test_create_bare_migrator_instance_in_org_space_timeout_failure(
     with pytest.raises(Exception):
         migration.create_bare_migrator_instance_in_org_space()
 
+    assert fake_requests.called
     last_request = fake_requests.request_history[-1]
     assert (
         last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
