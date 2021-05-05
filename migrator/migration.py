@@ -1,8 +1,8 @@
 import time
 
 from migrator import cf
-from migrator.dns import has_expected_cname
 from migrator.db import session_handler
+from migrator.dns import has_expected_cname
 from migrator.extensions import (
     cloudfront,
     config,
@@ -163,23 +163,7 @@ class Migration:
 
         self.external_domain_broker_service_instance = instance_info["guid"]
 
-        retries = config.SERVICE_CHANGE_RETRY_COUNT
-
-        while retries:
-            status = cf.get_migrator_service_instance_status(
-                self.external_domain_broker_service_instance, self.client
-            )
-
-            if status == "succeeded":
-                return
-
-            if status == "failed":
-                raise Exception("Creation of migrator service instance failed.")
-
-            retries -= 1
-            time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
-
-        raise Exception("Checking migrator service instance timed out.")
+        self.check_instance_status()
 
     def update_existing_cdn_domain(self):
         params = {
@@ -202,6 +186,9 @@ class Migration:
             self.external_domain_broker_service_instance, params, self.client
         )
 
+        self.check_instance_status()
+
+    def check_instance_status(self):
         retries = config.SERVICE_CHANGE_RETRY_COUNT
 
         while retries:
