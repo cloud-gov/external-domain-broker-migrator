@@ -32,6 +32,7 @@ class Migration:
         self.external_domain_broker_service_instance = None
         self._space_id = None
         self._org_id = None
+        self._iam_server_certificate_data = None
 
     @property
     def has_valid_dns(self):
@@ -46,6 +47,19 @@ class Migration:
                 Id=self.cloudfront_distribution_id
             )["Distribution"]
         return self._cloudfront_distribution_data
+
+    @property
+    def iam_server_certificate_data(self):
+        if self._iam_server_certificate_data is None:
+            server_certificate_metadata_list = iam_commercial.list_server_certificates()
+            for server_certificate in server_certificate_metadata_list[
+                "ServerCertificateMetadataList"
+            ]:
+                if server_certificate["ServerCertificateId"] == self.iam_certificate_id:
+                    self._iam_server_certificate_data = server_certificate
+                    break
+
+        return self._iam_server_certificate_data
 
     @property
     def cloudfront_distribution_config(self):
@@ -118,13 +132,11 @@ class Migration:
 
     @property
     def iam_certificate_name(self):
-        return self.cloudfront_distribution_config["ViewerCertificate"]["Certificate"]
+        return self.iam_server_certificate_data["ServerCertificateName"]
 
     @property
     def iam_certificate_arn(self):
-        return self.cloudfront_distribution_config["ViewerCertificate"][
-            "ACMCertificateArn"
-        ]
+        return self.iam_server_certificate_data["Arn"]
 
     @property
     def space_id(self):
