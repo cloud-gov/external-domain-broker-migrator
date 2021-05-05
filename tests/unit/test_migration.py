@@ -1,4 +1,7 @@
+import datetime
+
 import pytest
+
 from migrator.migration import find_active_instances, Migration
 from migrator.models import CdnRoute
 
@@ -766,6 +769,14 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests):
             },
         },
     }
+    migration._iam_server_certificate_data = {
+        "Path": "/",
+        "ServerCertificateName": "my-server-cert",
+        "ServerCertificateId": "my-server-cert-id",
+        "Arn": "aws:arn:iam:my-server-cert",
+        "UploadDate": datetime.date(2021, 1, 1),
+        "Expiration": datetime.date(2022, 1, 1),
+    }
 
     response_body_update_instance = """
 {
@@ -930,6 +941,14 @@ def test_update_existing_cdn_domain_failure(clean_db, fake_cf_client, fake_reque
             },
         },
     }
+    migration._iam_server_certificate_data = {
+        "Path": "/",
+        "ServerCertificateName": "my-server-cert",
+        "ServerCertificateId": "my-server-cert-id",
+        "Arn": "aws:arn:iam:my-server-cert",
+        "UploadDate": datetime.date(2021, 1, 1),
+        "Expiration": datetime.date(2022, 1, 1),
+    }
 
     response_body_update_instance = """
 {
@@ -1026,7 +1045,9 @@ def test_update_existing_cdn_domain_failure(clean_db, fake_cf_client, fake_reque
     )
 
 
-def test_update_existing_cdn_domain_timeout_failure(clean_db, fake_cf_client, fake_requests):
+def test_update_existing_cdn_domain_timeout_failure(
+    clean_db, fake_cf_client, fake_requests
+):
     route = CdnRoute()
     route.state = "provisioned"
     route.instance_id = "my-route-instance-id"
@@ -1094,6 +1115,14 @@ def test_update_existing_cdn_domain_timeout_failure(clean_db, fake_cf_client, fa
                 "Certificate": "my-cloudfront-cert",
             },
         },
+    }
+    migration._iam_server_certificate_data = {
+        "Path": "/",
+        "ServerCertificateName": "my-server-cert",
+        "ServerCertificateId": "my-server-cert-id",
+        "Arn": "aws:arn:iam:my-server-cert",
+        "UploadDate": datetime.date(2021, 1, 1),
+        "Expiration": datetime.date(2022, 1, 1),
     }
 
     response_body_update_instance = """
