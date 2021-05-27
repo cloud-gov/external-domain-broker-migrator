@@ -1218,3 +1218,24 @@ def test_update_existing_cdn_domain_timeout_failure(
     assert (
         last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
     )
+
+
+## TODO: Test multiple pages finding server certificate results
+def test_find_iam_server_certificate_data(clean_db, iam, fake_cf_client):
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.domain_external = "example.gov"
+    route.domain_internal = "example.cloudfront.net"
+    route.dist_id = "sample-distribution-id"
+    route.instance_id = "some-service-instance-id"
+    migration = Migration(route, clean_db, fake_cf_client)
+    migration.cloudfront_distribution_config = {
+        "ViewerCertificate": {
+            "IAMCertificateId": "my-server-certificate-id"
+        }
+    }
+
+    iam.expect_list_server_certificates
+
+
+## TODO: Test multiple pages not finding server certificate results
