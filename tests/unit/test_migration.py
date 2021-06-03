@@ -732,17 +732,10 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests):
                         "Forward": "whitelist",
                         "WhitelistedNames": {
                             "Quantity": 1,
-                            "Items": [
-                                "white-listed-name",
-                            ],
+                            "Items": ["white-listed-name",],
                         },
                     },
-                    "Headers": {
-                        "Quantity": 1,
-                        "Items": [
-                            "white-listed-name-header",
-                        ],
-                    },
+                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header",],},
                 }
             },
             "CustomErrorResponses": {
@@ -904,17 +897,10 @@ def test_update_existing_cdn_domain_failure(clean_db, fake_cf_client, fake_reque
                         "Forward": "whitelist",
                         "WhitelistedNames": {
                             "Quantity": 1,
-                            "Items": [
-                                "white-listed-name",
-                            ],
+                            "Items": ["white-listed-name",],
                         },
                     },
-                    "Headers": {
-                        "Quantity": 1,
-                        "Items": [
-                            "white-listed-name-header",
-                        ],
-                    },
+                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header",],},
                 }
             },
             "CustomErrorResponses": {
@@ -1079,17 +1065,10 @@ def test_update_existing_cdn_domain_timeout_failure(
                         "Forward": "whitelist",
                         "WhitelistedNames": {
                             "Quantity": 1,
-                            "Items": [
-                                "white-listed-name",
-                            ],
+                            "Items": ["white-listed-name",],
                         },
                     },
-                    "Headers": {
-                        "Quantity": 1,
-                        "Items": [
-                            "white-listed-name-header",
-                        ],
-                    },
+                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header",],},
                 }
             },
             "CustomErrorResponses": {
@@ -1220,8 +1199,11 @@ def test_update_existing_cdn_domain_timeout_failure(
     )
 
 
-## TODO: Test multiple pages finding server certificate results
-def test_find_iam_server_certificate_data(clean_db, iam, fake_cf_client):
+def test_find_iam_server_certificate_data_finding_result(
+    clean_db, iam_commercial, fake_cf_client
+):
+    """ tests finding a result in multiple pages
+    should also be an effective test of finding the result in one page"""
     route = CdnRoute()
     route.state = "provisioned"
     route.domain_external = "example.gov"
@@ -1229,13 +1211,60 @@ def test_find_iam_server_certificate_data(clean_db, iam, fake_cf_client):
     route.dist_id = "sample-distribution-id"
     route.instance_id = "some-service-instance-id"
     migration = Migration(route, clean_db, fake_cf_client)
-    migration.cloudfront_distribution_config = {
-        "ViewerCertificate": {
-            "IAMCertificateId": "my-server-certificate-id"
+    migration._cloudfront_distribution_data = {
+        "DistributionConfig": {
+            "ViewerCertificate": {"IAMCertificateId": "my-server-certificate-id"}
         }
     }
 
-    iam.expect_list_server_certificates
+    # one page of results without the right one
+    iam_commercial.expect_list_server_certificates(
+        "not-my-server-certificate-name",
+        "not-my-server-certificate-id",
+        "/cloudfront/",
+        is_truncated=True,
+    )
+    # one page of results with the right certificate
+    iam_commercial.expect_list_server_certificates(
+        "my-server-certificate-name",
+        "my-server-certificate-id",
+        "/cloudfront/",
+        marker_in="1",
+        is_truncated=False,
+    )
+    assert migration.iam_certificate_name == "my-server-certificate-name"
 
 
-## TODO: Test multiple pages not finding server certificate results
+def test_find_iam_server_certificate_data_without_finding_result(
+    clean_db, iam_commercial, fake_cf_client
+):
+    """ tests paging without finding results """
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.domain_external = "example.gov"
+    route.domain_internal = "example.cloudfront.net"
+    route.dist_id = "sample-distribution-id"
+    route.instance_id = "some-service-instance-id"
+    migration = Migration(route, clean_db, fake_cf_client)
+    migration._cloudfront_distribution_data = {
+        "DistributionConfig": {
+            "ViewerCertificate": {"IAMCertificateId": "my-server-certificate-id"}
+        }
+    }
+
+    # one page of results without the right one
+    iam_commercial.expect_list_server_certificates(
+        "not-my-server-certificate-name",
+        "not-my-server-certificate-id",
+        "/cloudfront/",
+        is_truncated=True,
+    )
+    # second page of results without the right one
+    iam_commercial.expect_list_server_certificates(
+        "not-my-server-certificate-name",
+        "not-my-server-certificate-id",
+        "/cloudfront/",
+        marker_in="1",
+        is_truncated=False,
+    )
+    assert migration.iam_server_certificate_data is None
