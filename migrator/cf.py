@@ -43,11 +43,7 @@ def get_org_id_for_space_id(space_id, client):
 
 
 def get_all_space_ids_for_org(org_id, client):
-    spaces = client.v3.spaces.list(
-        organization_guids=[
-            org_id,
-        ]
-    )
+    spaces = client.v3.spaces.list(organization_guids=[org_id,])
     return [space["guid"] for space in spaces]
 
 

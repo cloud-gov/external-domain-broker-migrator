@@ -52,23 +52,26 @@ class Migration:
     def iam_server_certificate_data(self):
         if self._iam_server_certificate_data is None:
             server_certificate_metadata_list = {}
-            is_truncated = False
+            is_truncated = True
 
             while is_truncated:
-                if server_certificate_metadata_list.get("Marker"):
-                    kwargs = {
-                        "Marker": server_certificate_metadata_list.get("Marker")
-                    }
+                if server_certificate_metadata_list.get("Marker") is not None:
+                    kwargs = {"Marker": server_certificate_metadata_list.get("Marker")}
                 else:
                     kwargs = {}
 
-                server_certificate_metadata_list = iam_commercial.list_server_certificates(**kwargs)
+                server_certificate_metadata_list = iam_commercial.list_server_certificates(
+                    **kwargs
+                )
                 is_truncated = server_certificate_metadata_list["IsTruncated"]
 
                 for server_certificate in server_certificate_metadata_list[
                     "ServerCertificateMetadataList"
                 ]:
-                    if server_certificate["ServerCertificateId"] == self.iam_certificate_id:
+                    if (
+                        server_certificate["ServerCertificateId"]
+                        == self.iam_certificate_id
+                    ):
                         self._iam_server_certificate_data = server_certificate
                         return self._iam_server_certificate_data
 
