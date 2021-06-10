@@ -722,7 +722,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests):
                         "OriginPath": "example.gov",
                         "S3OriginConfig": None,
                         "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
-                    },
+                    }
                 ]
             },
             "DefaultCacheBehavior": {
@@ -732,10 +732,10 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests):
                         "Forward": "whitelist",
                         "WhitelistedNames": {
                             "Quantity": 1,
-                            "Items": ["white-listed-name",],
+                            "Items": ["white-listed-name"],
                         },
                     },
-                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header",],},
+                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header"]},
                 }
             },
             "CustomErrorResponses": {
@@ -887,7 +887,7 @@ def test_update_existing_cdn_domain_failure(clean_db, fake_cf_client, fake_reque
                         "OriginPath": "example.gov",
                         "S3OriginConfig": None,
                         "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
-                    },
+                    }
                 ]
             },
             "DefaultCacheBehavior": {
@@ -897,10 +897,10 @@ def test_update_existing_cdn_domain_failure(clean_db, fake_cf_client, fake_reque
                         "Forward": "whitelist",
                         "WhitelistedNames": {
                             "Quantity": 1,
-                            "Items": ["white-listed-name",],
+                            "Items": ["white-listed-name"],
                         },
                     },
-                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header",],},
+                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header"]},
                 }
             },
             "CustomErrorResponses": {
@@ -1055,7 +1055,7 @@ def test_update_existing_cdn_domain_timeout_failure(
                         "OriginPath": "example.gov",
                         "S3OriginConfig": None,
                         "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
-                    },
+                    }
                 ]
             },
             "DefaultCacheBehavior": {
@@ -1065,10 +1065,10 @@ def test_update_existing_cdn_domain_timeout_failure(
                         "Forward": "whitelist",
                         "WhitelistedNames": {
                             "Quantity": 1,
-                            "Items": ["white-listed-name",],
+                            "Items": ["white-listed-name"],
                         },
                     },
-                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header",],},
+                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header"]},
                 }
             },
             "CustomErrorResponses": {
@@ -1268,3 +1268,15 @@ def test_find_iam_server_certificate_data_without_finding_result(
         is_truncated=False,
     )
     assert migration.iam_server_certificate_data is None
+
+
+def test_migration_marks_route_migrated(clean_db, fake_cf_client):
+    route = CdnRoute()
+    route.state = "provisioned"
+    route.domain_external = "example.gov"
+    route.domain_internal = "example.cloudfront.net"
+    route.dist_id = "sample-distribution-id"
+    route.instance_id = "some-service-instance-id"
+    migration = Migration(route, clean_db, fake_cf_client)
+    migration.mark_complete()
+    assert route.state == "migrated"
