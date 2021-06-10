@@ -26,6 +26,7 @@ class Migration:
         self.instance_id = route.instance_id
         self.domain_internal = route.domain_internal
         self.cloudfront_distribution_id = route.dist_id
+        self.route = route
         self._cloudfront_distribution_data = None
         self.session = session
         self.client = client
@@ -281,6 +282,9 @@ class Migration:
                     "MaxAttempts": config.AWS_POLL_MAX_ATTEMPTS,
                 },
             )
+
+    def mark_complete(self):
+        self.route.state = "migrated"
 
     @staticmethod
     def parse_cloudfront_error_response(error_responses):
