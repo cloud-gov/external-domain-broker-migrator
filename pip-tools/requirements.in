@@ -4,6 +4,7 @@ cloudfoundry-client
 cryptography
 dnspython
 environs
+schedule
 sqlalchemy
 sqlalchemy-utils
 psycopg2

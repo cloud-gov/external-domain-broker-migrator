@@ -20,6 +20,24 @@ def find_active_instances(session):
     return routes
 
 
+def migrate_ready_instances(session, client):
+    results = dict(migrated=[], skipped=[], failed=[])
+    for route in find_active_instances(session):
+        if route.has_valid_dns():
+            try:
+                migration = Migration(route, session, client)
+                migration.migrate()
+            except Exception as e:
+                # todo: drop print when we add global handling
+                print(e)
+                results["failed"].append(route.instance_id)
+            else:
+                results["migrated"].append(route.instance_id)
+        else:
+            results["skipped"].append(route.instance_id)
+    return results
+
+
 class Migration:
     def __init__(self, route: CdnRoute, session, client):
         self.domains = route.domain_external.split(",")
