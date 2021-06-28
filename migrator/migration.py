@@ -298,6 +298,13 @@ class Migration:
     def mark_complete(self):
         self.route.state = "migrated"
 
+    def migrate(self):
+        self.enable_migration_service_plan()
+        self.create_bare_migrator_instance_in_org_space()
+        self.update_existing_cdn_domain()
+        self.disable_migration_service_plan()
+        self.mark_complete()
+
     @staticmethod
     def parse_cloudfront_error_response(error_responses):
         responses = {}
