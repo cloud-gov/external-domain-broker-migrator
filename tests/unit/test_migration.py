@@ -1282,7 +1282,6 @@ def test_migration_marks_route_migrated(clean_db, fake_cf_client):
     assert route.state == "migrated"
 
 
-@pytest.mark.focus
 def test_migration_migrates_happy_path(
     clean_db, fake_cf_client, iam_commercial, route53, cloudfront, dns, fake_requests
 ):
