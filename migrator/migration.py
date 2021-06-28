@@ -1,3 +1,4 @@
+import logging
 import time
 
 from migrator import cf
@@ -12,6 +13,8 @@ from migrator.extensions import (
     migration_plan_instance_name,
 )
 from migrator.models import CdnRoute
+
+logger = logging.getLogger(__name__)
 
 
 def find_active_instances(session):
@@ -37,6 +40,7 @@ class Migration:
 
     @property
     def has_valid_dns(self):
+        logger.debug("validating DNS for %s", self.instance_id)
         if not self.domains:
             return False
         return all([has_expected_cname(domain) for domain in self.domains])
@@ -44,6 +48,7 @@ class Migration:
     @property
     def cloudfront_distribution_data(self):
         if self._cloudfront_distribution_data is None:
+            logger.debug("getting cloudfront data for %s", self.instance_id)
             self._cloudfront_distribution_data = cloudfront.get_distribution(
                 Id=self.cloudfront_distribution_id
             )["Distribution"]
@@ -51,11 +56,15 @@ class Migration:
 
     @property
     def iam_server_certificate_data(self):
+        logger.debug("getting iam server certificate data for %s", self.instance_id)
         if self._iam_server_certificate_data is None:
             server_certificate_metadata_list = {}
             is_truncated = True
 
             while is_truncated:
+                logger.debug(
+                    "getting next page of server certificates %s", self.instance_id
+                )
                 if server_certificate_metadata_list.get("Marker") is not None:
                     kwargs = {"Marker": server_certificate_metadata_list.get("Marker")}
                 else:
@@ -183,6 +192,7 @@ class Migration:
             cf.disable_plan_for_org(service_plan_visibility_id, self.client)
 
     def create_bare_migrator_instance_in_org_space(self):
+        logger.debug("creating bare instance for %s", self.instance_id)
         instance_info = cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
             migration_plan_guid,
@@ -195,6 +205,7 @@ class Migration:
         self.check_instance_status()
 
     def update_existing_cdn_domain(self):
+        logger.debug("updating bare instance for %s", self.instance_id)
         params = {
             "origin": self.origin_hostname,
             "path": self.origin_path,
@@ -237,6 +248,7 @@ class Migration:
         raise Exception("Checking migrator service instance timed out.")
 
     def upsert_dns(self):
+        logger.debug("upserting DNS for %s", self.instance_id)
         change_ids = []
         for domain in self.domains:
             alias_record = f"{domain}.{config.DNS_ROOT_DOMAIN}"
