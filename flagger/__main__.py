@@ -18,6 +18,9 @@ def main():
     print(f"{len(domains)} domain(s) found")
     for domain in domains:
         aws.create_semaphore(domain, dry_run)
+    domain_cdns = queries.find_aliases()
+    for domain_cdn in domain_cdns():
+        aws.create_cdn_alias(*domain_cdn)
 
 
 if __name__ == "__main__":

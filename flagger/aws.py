@@ -21,3 +21,40 @@ def create_semaphore(domain, dry_run=False):
             ]
         },
     )
+
+
+def create_cdn_alias(internal_domain, cloudfront_domain):
+    print(f"Creating ALIAS '{internal_domain}' => {cloudfront_domain}")
+    if dry_run:
+        return
+    route53_response = route53.change_resource_record_sets(
+        ChangeBatch={
+            "Changes": [
+                {
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                        "Type": "A",
+                        "Name": internal_domain,
+                        "AliasTarget": {
+                            "DNSName": cloudfront_domain,
+                            "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
+                            "EvaluateTargetHealth": False,
+                        },
+                    },
+                },
+                {
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                        "Type": "AAAA",
+                        "Name": internal_domain,
+                        "AliasTarget": {
+                            "DNSName": cloudfront_domain,
+                            "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
+                            "EvaluateTargetHealth": False,
+                        },
+                    },
+                },
+            ]
+        },
+        HostedZoneId=config.ROUTE53_ZONE_ID,
+    )
