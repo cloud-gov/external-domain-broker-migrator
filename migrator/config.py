@@ -42,6 +42,7 @@ class LocalConfig(Config):
         self.CF_API_ENDPOINT = "http://localhost"
         self.SERVICE_CHANGE_RETRY_COUNT = 2
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 0.01
+        self.MIGRATION_TIME = "11:00:00"
 
 
 class AppConfig(Config):
@@ -69,6 +70,7 @@ class AppConfig(Config):
         self.AWS_POLL_MAX_ATTEMPTS = 10
         self.SERVICE_CHANGE_RETRY_COUNT = 60
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 10
+        self.MIGRATION_TIME = self.env_parser("MIGRATION_TIME", "11:00:00")
 
 
 class DevelopmentConfig(AppConfig):
