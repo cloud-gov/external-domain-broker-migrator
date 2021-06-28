@@ -27,6 +27,7 @@ def create_cdn_alias(internal_domain, cloudfront_domain):
     print(f"Creating ALIAS '{internal_domain}' => {cloudfront_domain}")
     if dry_run:
         return
+    alias_record = f"{internal_domain}.{config.DNS_ROOT_DOMAIN}"
     route53_response = route53.change_resource_record_sets(
         ChangeBatch={
             "Changes": [
@@ -34,7 +35,7 @@ def create_cdn_alias(internal_domain, cloudfront_domain):
                     "Action": "UPSERT",
                     "ResourceRecordSet": {
                         "Type": "A",
-                        "Name": internal_domain,
+                        "Name": alias_record,
                         "AliasTarget": {
                             "DNSName": cloudfront_domain,
                             "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
@@ -46,7 +47,7 @@ def create_cdn_alias(internal_domain, cloudfront_domain):
                     "Action": "UPSERT",
                     "ResourceRecordSet": {
                         "Type": "AAAA",
-                        "Name": internal_domain,
+                        "Name": alias_record,
                         "AliasTarget": {
                             "DNSName": cloudfront_domain,
                             "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
