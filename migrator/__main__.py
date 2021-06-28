@@ -10,7 +10,7 @@ from migrator.cf import get_cf_client
 
 def run_and_report():
     with session_handler() as session:
-        results = migrate_ready_instances(session, get_cf_client())
+        results = migrate_ready_instances(session, get_cf_client(config))
     # todo: report results
     print(results)
 
