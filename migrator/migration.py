@@ -34,6 +34,7 @@ def migrate_ready_instances(session, client):
                 # todo: drop print when we add global handling
                 print(e)
                 route.state = "migration_failed"
+                session.commit()
                 results["failed"].append(route.instance_id)
             else:
                 results["migrated"].append(route.instance_id)
@@ -316,6 +317,7 @@ class Migration:
 
     def mark_complete(self):
         self.route.state = "migrated"
+        self.session.commit()
 
     def migrate(self):
         self.enable_migration_service_plan()
