@@ -18,3 +18,4 @@ def find_aliases():
         for route in routes:
             for domain in route.domain_external_list():
                 domain_cdns.append((domain, route.domain_internal))
+    return domain_cdns
