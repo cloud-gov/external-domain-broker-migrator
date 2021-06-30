@@ -78,3 +78,8 @@ def get_migrator_service_instance_status(instance_id, client):
 def update_existing_cdn_domain_service_instance(instance_id, params, client):
     logger.debug("updating service instance %s", instance_id)
     return client.v2.service_instances.update(instance_id, parameters=params)
+
+
+def purge_service_instance(instance_id, client):
+    logger.debug("purging service instance %s", instance_id)
+    return client.v2.service_instances.remove(instance_id, purge=True)

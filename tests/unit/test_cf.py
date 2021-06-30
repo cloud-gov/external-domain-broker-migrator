@@ -449,3 +449,48 @@ def update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):
     assert response["guid"] == "my-migrator-instance"
     assert response["state"] == "in progress"
     assert response["type"] == "update"
+
+
+def test_purge_service_instance(fake_cf_client, fake_requests):
+    response_body = """{
+  "metadata": {
+    "guid": "my-service-instance",
+    "url": "/v2/service_instances/my-service-instance",
+    "created_at": "2016-06-08T16:41:29Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "name-1502",
+    "credentials": { },
+    "service_plan_guid": "8ea19d29-2e20-469e-8b91-917a6410e2f2",
+    "space_guid": "dd68a2ba-04a3-4125-99ea-643b96e07ef6",
+    "gateway_data": null,
+    "dashboard_url": null,
+    "type": "managed_service_instance",
+    "last_operation": {
+      "type": "delete",
+      "state": "complete",
+      "description": "",
+      "updated_at": "2016-06-08T16:41:29Z",
+      "created_at": "2016-06-08T16:41:29Z"
+    },
+    "tags": [ ],
+    "maintenance_info": {},
+    "space_url": "/v2/spaces/dd68a2ba-04a3-4125-99ea-643b96e07ef6",
+    "service_plan_url": "/v2/service_plans/8ea19d29-2e20-469e-8b91-917a6410e2f2",
+    "service_bindings_url": "/v2/service_instances/1aaeb02d-16c3-4405-bc41-80e83d196dff/service_bindings",
+    "service_keys_url": "/v2/service_instances/1aaeb02d-16c3-4405-bc41-80e83d196dff/service_keys",
+    "routes_url": "/v2/service_instances/1aaeb02d-16c3-4405-bc41-80e83d196dff/routes",
+    "shared_from_url": "/v2/service_instances/6da8d173-b409-4094-949f-3c1cc8a68503/shared_from",
+    "shared_to_url": "/v2/service_instances/6da8d173-b409-4094-949f-3c1cc8a68503/shared_to"
+  }
+
+    } """
+
+    fake_requests.delete(
+        "http://localhost/v2/service_instances/my-service-instance?purge=true",
+        text=response_body,
+    )
+
+    cf.purge_service_instance("my-service-instance", fake_cf_client)
+    assert fake_requests.called
