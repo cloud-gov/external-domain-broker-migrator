@@ -315,6 +315,9 @@ class Migration:
                 },
             )
 
+    def purge_old_instance(self):
+        cf.purge_service_instance(self.route.instance_id, self.client)
+
     def mark_complete(self):
         self.route.state = "migrated"
         self.session.commit()
@@ -324,6 +327,7 @@ class Migration:
         self.create_bare_migrator_instance_in_org_space()
         self.update_existing_cdn_domain()
         self.disable_migration_service_plan()
+        self.purge_old_instance()
         self.mark_complete()
 
     @staticmethod
