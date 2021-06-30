@@ -35,7 +35,7 @@ def get_service_plan_visibility_ids_for_org(plan_id, org_id, client):
 
 
 def disable_plan_for_org(service_plan_visibility_id, client):
-    logger.debug("disabling plan for %s", org_id)
+    logger.debug("disabling plan visibility")
     return client.v2.service_plan_visibilities.remove(service_plan_visibility_id)
 
 
