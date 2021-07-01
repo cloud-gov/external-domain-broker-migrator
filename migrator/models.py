@@ -93,7 +93,7 @@ class CustomDomainRoute(CustomDomainBase):
     guid = sa.Column(sa.Text, primary_key=True)
     state = sa.Column(sa.Text)
     domains = sa.Column(sa.Text)
-    challenge_json = sa.column(postgresql.BYTEA)
+    challenge_json = sa.Column(postgresql.BYTEA)
     user_data_id = sa.Column(sa.Integer)
     alb_proxy_arn = sa.Column(sa.Text)
     certificates = orm.relationship("CustomDomainCertificate")
