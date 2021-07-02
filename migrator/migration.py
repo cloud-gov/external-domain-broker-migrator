@@ -65,12 +65,6 @@ class Migration:
         instance_data = cf.get_instance_data(self.instance_id, self.client)
         return instance_data["entity"]["name"]
 
-    # @property
-    # def instance_name(self):
-    #     if self._instance_name is None:
-    #         self._instance_name = self.get_instance_name()
-    #     return self._instance_name
-
     @property
     def has_valid_dns(self):
         logger.debug("validating DNS for %s", self.instance_id)
