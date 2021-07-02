@@ -10,18 +10,6 @@ import requests_mock
 from tests.lib.fake_cf import get_test_client
 
 
-@pytest.fixture
-def migration(clean_db, fake_cf_client):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.domain_external = "example.gov"
-    route.domain_internal = "example.cloudfront.net"
-    route.dist_id = "sample-distribution-id"
-    route.instance_id = "some-service-instance-id"
-    migration = Migration(route, clean_db, fake_cf_client)
-    return migration
-
-
 def test_get_client(fake_requests):
     # this test mostly just validates the test framework
     client = get_test_client(fake_requests)
@@ -110,8 +98,7 @@ def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
 }
 """
     fake_requests.get(
-        "http://localhost/v2/service_instances/some-service-instance-id",
-        text=response_body,
+        "http://localhost/v2/service_instances/asdf-asdf", text=response_body
     )
     assert (
         cf.get_space_id_for_service_instance_id(migration.instance_id, fake_cf_client)
@@ -120,10 +107,7 @@ def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert (
-        last_request.url
-        == "http://localhost/v2/service_instances/some-service-instance-id"
-    )
+    assert last_request.url == "http://localhost/v2/service_instances/asdf-asdf"
 
 
 def test_get_org_id_for_space_id(fake_cf_client, fake_requests):

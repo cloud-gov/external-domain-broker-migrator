@@ -25,59 +25,83 @@ def test_find_instances(clean_db):
     assert instances[0].state == "provisioned"
 
 
-def test_validate_good_dns(clean_db, dns, fake_cf_client):
+def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
     dns.add_cname("_acme-challenge.example.com")
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com"
-    migration = Migration(route, clean_db, fake_cf_client)
+    migration.domains = ["example.com"]
     assert migration.has_valid_dns
 
 
-def test_validate_bad_dns(clean_db, dns, fake_cf_client):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com"
-    migration = Migration(route, clean_db, fake_cf_client)
+def test_validate_bad_dns(clean_db, dns, fake_cf_client, migration):
+    migration.domains = ["example.com"]
     assert not migration.has_valid_dns
 
 
-def test_validate_mixed_good_and_bad_dns(clean_db, dns, fake_cf_client):
+def test_validate_mixed_good_and_bad_dns(clean_db, dns, fake_cf_client, migration):
     dns.add_cname("_acme-challenge.example.com")
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    migration = Migration(route, clean_db, fake_cf_client)
+    migration.domains = ["example.com", "foo.example.com"]
     assert not migration.has_valid_dns
 
 
-def test_validate_multiple_valid_dns(clean_db, dns, fake_cf_client):
+def test_validate_multiple_valid_dns(clean_db, dns, fake_cf_client, migration):
     dns.add_cname("_acme-challenge.example.com")
     dns.add_cname("_acme-challenge.foo.example.com")
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    migration = Migration(route, clean_db, fake_cf_client)
+    migration.domains = ["example.com", "foo.example.com"]
     assert Migration.has_valid_dns
 
 
-def test_migration_init(clean_db, fake_cf_client):
+def test_migration_init(clean_db, fake_cf_client, fake_requests):
     route = CdnRoute()
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com,foo.example.com"
     route.dist_id = "some-distribution-id"
+    response_body = """
+{
+  "metadata": {
+    "guid": "asdf-asdf",
+    "url": "/v2/service_instances/asdf-asdf",
+    "created_at": "2016-06-08T16:41:29Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "my-old-cdn",
+    "credentials": { },
+    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
+    "space_guid": "my-space-guid",
+    "gateway_data": null,
+    "dashboard_url": null,
+    "type": "managed_service_instance",
+    "last_operation": {
+      "type": "create",
+      "state": "succeeded",
+      "description": "",
+      "updated_at": "2016-06-08T16:41:26Z",
+      "created_at": "2016-06-08T16:41:29Z"
+    },
+    "space_url": "/v2/spaces/my-space-guid",
+    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
+    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
+    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
+    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
+    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+  }
+}
+    """
+    fake_requests.get(
+        "http://localhost/v2/service_instances/asdf-asdf", text=response_body
+    )
     migration = Migration(route, clean_db, fake_cf_client)
+
     assert sorted(migration.domains) == sorted(["example.com", "foo.example.com"])
     assert migration.instance_id == "asdf-asdf"
     assert migration.cloudfront_distribution_id == "some-distribution-id"
+    assert migration.instance_name == "my-old-cdn"
 
 
-def test_migration_loads_cloudfront_config(clean_db, cloudfront, fake_cf_client):
+def test_migration_loads_cloudfront_config(
+    clean_db, cloudfront, fake_cf_client, migration
+):
     domains = ["example.gov"]
     cloudfront.expect_get_distribution(
         caller_reference="asdf",
@@ -98,11 +122,7 @@ def test_migration_loads_cloudfront_config(clean_db, cloudfront, fake_cf_client)
             ],
         },
     )
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.domain_external = "example.gov"
-    route.dist_id = "sample-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+    migration.route.dist_id = "sample-distribution-id"
     assert migration.cloudfront_distribution_data is not None
     cloudfront.assert_no_pending_responses()
     assert migration.cloudfront_distribution_config is not None
@@ -121,7 +141,7 @@ def test_migration_loads_cloudfront_config(clean_db, cloudfront, fake_cf_client)
 
 
 def test_migration_loads_cloudfront_config_with_no_error_reponses(
-    clean_db, cloudfront, fake_cf_client
+    clean_db, cloudfront, fake_cf_client, migration
 ):
     domains = ["example.gov"]
     cloudfront.expect_get_distribution(
@@ -134,11 +154,7 @@ def test_migration_loads_cloudfront_config_with_no_error_reponses(
         status="active",
         custom_error_responses={"Quantity": 0},
     )
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.domain_external = "example.gov"
-    route.dist_id = "sample-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+    migration.route.dist_id = "sample-distribution-id"
     assert migration.cloudfront_distribution_data is not None
     cloudfront.assert_no_pending_responses()
     assert migration.cloudfront_distribution_config is not None
@@ -199,14 +215,8 @@ def test_cloudfront_error_response_to_edb_error_response(input_, expected):
     assert expected == Migration.parse_cloudfront_error_response(input_)
 
 
-def test_migration_create_internal_dns(clean_db, route53, fake_cf_client):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.domain_external = "example.gov"
-    route.domain_internal = "example.cloudfront.net"
-    route.dist_id = "sample-distribution-id"
-    route.instance_id = "some-service-instance-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+def test_migration_create_internal_dns(clean_db, route53, fake_cf_client, migration):
+    migration.route.dist_id = "sample-distribution-id"
     change_id = route53.expect_create_ALIAS_and_return_change_id(
         "example.gov.domains.cloud.test", "example.cloudfront.net"
     )
@@ -214,11 +224,11 @@ def test_migration_create_internal_dns(clean_db, route53, fake_cf_client):
     migration.upsert_dns()
 
 
-def test_migration_gets_space_id(clean_db, fake_cf_client, fake_requests):
+def test_migration_gets_space_id(clean_db, fake_cf_client, fake_requests, migration):
     response_body = """ {
         "metadata": {
-          "guid": "some-instance-id",
-          "url": "/v2/service_instances/some-instance-id",
+          "guid": "asdf-asdf",
+          "url": "/v2/service_instances/asdf-asdf",
           "created_at": "2016-06-08T16:41:29Z",
           "updated_at": "2016-06-08T16:41:26Z"
         },
@@ -242,16 +252,10 @@ def test_migration_gets_space_id(clean_db, fake_cf_client, fake_requests):
     fake_requests.get(
         "http://localhost/v2/service_instances/asdf-asdf", text=response_body
     )
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
     assert migration.space_id == "my-space-guid"
 
 
-def test_migration_gets_org_id(clean_db, fake_cf_client, fake_requests):
+def test_migration_gets_org_id(clean_db, fake_cf_client, fake_requests, migration):
     response_body = """
     {
   "guid": "my-space-guid",
@@ -290,23 +294,13 @@ def test_migration_gets_org_id(clean_db, fake_cf_client, fake_requests):
 }
 """
     fake_requests.get("http://localhost/v3/spaces/my-space-guid", text=response_body)
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
     migration._space_id = "my-space-guid"
     assert migration.org_id == "my-org-guid"
 
 
-def test_migration_enables_plan_in_org(clean_db, fake_cf_client, fake_requests):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+def test_migration_enables_plan_in_org(
+    clean_db, fake_cf_client, fake_requests, migration
+):
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
@@ -337,13 +331,9 @@ def test_migration_enables_plan_in_org(clean_db, fake_cf_client, fake_requests):
     assert last_request.url == "http://localhost/v2/service_plan_visibilities"
 
 
-def test_migration_disables_plan_in_org(clean_db, fake_cf_client, fake_requests):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+def test_migration_disables_plan_in_org(
+    clean_db, fake_cf_client, fake_requests, migration
+):
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
@@ -393,14 +383,8 @@ def test_migration_disables_plan_in_org(clean_db, fake_cf_client, fake_requests)
 
 
 def test_create_bare_migrator_instance_in_org_space_success(
-    clean_db, fake_cf_client, fake_requests
+    clean_db, fake_cf_client, fake_requests, migration
 ):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
@@ -494,14 +478,8 @@ def test_create_bare_migrator_instance_in_org_space_success(
 
 
 def test_create_bare_migrator_instance_in_org_space_failure(
-    clean_db, fake_cf_client, fake_requests
+    clean_db, fake_cf_client, fake_requests, migration
 ):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
@@ -596,14 +574,8 @@ def test_create_bare_migrator_instance_in_org_space_failure(
 
 
 def test_create_bare_migrator_instance_in_org_space_timeout_failure(
-    clean_db, fake_cf_client, fake_requests
+    clean_db, fake_cf_client, fake_requests, migration
 ):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "asdf-asdf"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
@@ -696,17 +668,12 @@ def test_create_bare_migrator_instance_in_org_space_timeout_failure(
         last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
     )
 
-    # one for the post, 2 for the status checks
-    assert len(fake_requests.request_history) == 3
+    # one for the name fetch, one for the post, 2 for the status checks
+    assert len(fake_requests.request_history) == 4
 
 
-def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "my-route-instance-id"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests, migration):
+    migration.route.dist_id = "some-distribution-id"
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
     migration.external_domain_broker_service_instance = "my-migrator-instance"
@@ -865,13 +832,10 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests):
     )
 
 
-def test_update_existing_cdn_domain_failure(clean_db, fake_cf_client, fake_requests):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "my-route-instance-id"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+def test_update_existing_cdn_domain_failure(
+    clean_db, fake_cf_client, fake_requests, migration
+):
+    migration.route.dist_id = "some-distribution-id"
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
     migration.external_domain_broker_service_instance = "my-migrator-instance"
@@ -1032,14 +996,9 @@ def test_update_existing_cdn_domain_failure(clean_db, fake_cf_client, fake_reque
 
 
 def test_update_existing_cdn_domain_timeout_failure(
-    clean_db, fake_cf_client, fake_requests
+    clean_db, fake_cf_client, fake_requests, migration
 ):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.instance_id = "my-route-instance-id"
-    route.domain_external = "example.com,foo.example.com"
-    route.dist_id = "some-distribution-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+    migration.route.dist_id = "some-distribution-id"
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
     migration.external_domain_broker_service_instance = "my-migrator-instance"
@@ -1200,17 +1159,10 @@ def test_update_existing_cdn_domain_timeout_failure(
 
 
 def test_find_iam_server_certificate_data_finding_result(
-    clean_db, iam_commercial, fake_cf_client
+    clean_db, iam_commercial, fake_cf_client, migration
 ):
     """ tests finding a result in multiple pages
     should also be an effective test of finding the result in one page"""
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.domain_external = "example.gov"
-    route.domain_internal = "example.cloudfront.net"
-    route.dist_id = "sample-distribution-id"
-    route.instance_id = "some-service-instance-id"
-    migration = Migration(route, clean_db, fake_cf_client)
     migration._cloudfront_distribution_data = {
         "DistributionConfig": {
             "ViewerCertificate": {"IAMCertificateId": "my-server-certificate-id"}
@@ -1236,16 +1188,9 @@ def test_find_iam_server_certificate_data_finding_result(
 
 
 def test_find_iam_server_certificate_data_without_finding_result(
-    clean_db, iam_commercial, fake_cf_client
+    clean_db, iam_commercial, fake_cf_client, migration
 ):
     """ tests paging without finding results """
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.domain_external = "example.gov"
-    route.domain_internal = "example.cloudfront.net"
-    route.dist_id = "sample-distribution-id"
-    route.instance_id = "some-service-instance-id"
-    migration = Migration(route, clean_db, fake_cf_client)
     migration._cloudfront_distribution_data = {
         "DistributionConfig": {
             "ViewerCertificate": {"IAMCertificateId": "my-server-certificate-id"}
@@ -1270,16 +1215,9 @@ def test_find_iam_server_certificate_data_without_finding_result(
     assert migration.iam_server_certificate_data is None
 
 
-def test_migration_marks_route_migrated(clean_db, fake_cf_client):
-    route = CdnRoute()
-    route.state = "provisioned"
-    route.domain_external = "example.gov"
-    route.domain_internal = "example.cloudfront.net"
-    route.dist_id = "sample-distribution-id"
-    route.instance_id = "some-service-instance-id"
-    migration = Migration(route, clean_db, fake_cf_client)
+def test_migration_marks_route_migrated(clean_db, fake_cf_client, migration):
     migration.mark_complete()
-    assert route.state == "migrated"
+    assert migration.route.state == "migrated"
 
 
 def test_migration_migrates_happy_path(
@@ -1296,6 +1234,43 @@ def test_migration_migrates_happy_path(
     - call purge on the old instance
     - disable the migration plan
     """
+    service_instance_data_response_body = """
+{
+  "metadata": {
+    "guid": "asdf-asdf",
+    "url": "/v2/service_instances/asdf-asdf",
+    "created_at": "2016-06-08T16:41:29Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "my-old-cdn",
+    "credentials": { },
+    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
+    "space_guid": "my-space-guid",
+    "gateway_data": null,
+    "dashboard_url": null,
+    "type": "managed_service_instance",
+    "last_operation": {
+      "type": "create",
+      "state": "succeeded",
+      "description": "",
+      "updated_at": "2016-06-08T16:41:26Z",
+      "created_at": "2016-06-08T16:41:29Z"
+    },
+    "space_url": "/v2/spaces/my-space-guid",
+    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
+    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
+    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
+    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
+    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+  }
+}
+    """
+    fake_requests.get(
+        "http://localhost/v2/service_instances/asdf-asdf",
+        text=service_instance_data_response_body,
+    )
     dns.add_cname("_acme-challenge.example.com")
     dns.add_cname("_acme-challenge.foo.com")
     route = CdnRoute()
@@ -1626,45 +1601,45 @@ def test_migration_migrates_happy_path(
     history = [request.url for request in fake_requests.request_history]
 
     assert (
-        fake_requests.request_history[2].url
+        fake_requests.request_history[3].url
         == "http://localhost/v2/service_plan_visibilities"
     )
-    assert fake_requests.request_history[2].method == "POST"
+    assert fake_requests.request_history[3].method == "POST"
 
     assert (
-        fake_requests.request_history[3].url == "http://localhost/v2/service_instances"
+        fake_requests.request_history[4].url == "http://localhost/v2/service_instances"
     )
-    assert fake_requests.request_history[3].method == "POST"
-    assert (
-        fake_requests.request_history[4].url
-        == "http://localhost/v2/service_instances/my-migrator-instance"
-    )
-    assert fake_requests.request_history[4].method == "GET"
+    assert fake_requests.request_history[4].method == "POST"
     assert (
         fake_requests.request_history[5].url
         == "http://localhost/v2/service_instances/my-migrator-instance"
     )
-    assert fake_requests.request_history[5].method == "PUT"
+    assert fake_requests.request_history[5].method == "GET"
     assert (
         fake_requests.request_history[6].url
         == "http://localhost/v2/service_instances/my-migrator-instance"
     )
-    assert fake_requests.request_history[6].method == "GET"
+    assert fake_requests.request_history[6].method == "PUT"
     assert (
         fake_requests.request_history[7].url
-        == "http://localhost/v2/service_plan_visibilities?q=organization_guid%3Amy-org-id&q=service_plan_guid%3A739e78F5-a919-46ef-9193-1293cc086c17"
+        == "http://localhost/v2/service_instances/my-migrator-instance"
     )
     assert fake_requests.request_history[7].method == "GET"
     assert (
         fake_requests.request_history[8].url
-        == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
+        == "http://localhost/v2/service_plan_visibilities?q=organization_guid%3Amy-org-id&q=service_plan_guid%3A739e78F5-a919-46ef-9193-1293cc086c17"
     )
-    assert fake_requests.request_history[8].method == "DELETE"
-
+    assert fake_requests.request_history[8].method == "GET"
     assert (
         fake_requests.request_history[9].url
-        == "http://localhost/v2/service_instances/asdf-asdf?purge=true"
+        == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
     )
     assert fake_requests.request_history[9].method == "DELETE"
+
+    assert (
+        fake_requests.request_history[10].url
+        == "http://localhost/v2/service_instances/asdf-asdf?purge=true"
+    )
+    assert fake_requests.request_history[10].method == "DELETE"
 
     assert route.state == "migrated"
