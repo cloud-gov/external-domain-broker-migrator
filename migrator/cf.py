@@ -83,3 +83,7 @@ def update_existing_cdn_domain_service_instance(instance_id, params, client):
 def purge_service_instance(instance_id, client):
     logger.debug("purging service instance %s", instance_id)
     return client.v2.service_instances.remove(instance_id, purge=True)
+
+
+def get_instance_data(instance_id, client):
+    return client.v2.service_instances.get(instance_id)
