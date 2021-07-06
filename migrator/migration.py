@@ -344,6 +344,7 @@ class Migration:
         self.update_existing_cdn_domain()
         self.disable_migration_service_plan()
         self.purge_old_instance()
+        self.update_instance_name()
         self.mark_complete()
 
     @staticmethod
