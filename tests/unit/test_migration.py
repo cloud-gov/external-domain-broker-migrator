@@ -1215,6 +1215,108 @@ def test_find_iam_server_certificate_data_without_finding_result(
     assert migration.iam_server_certificate_data is None
 
 
+def test_migration_renames_instance(clean_db, fake_cf_client, migration, fake_requests):
+    # the migration fixture gives us the name "my-old-cdn"
+    def name_matcher(request):
+        return request.json().get("name") == "my-old-cdn"
+
+    response_body_update_instance = """
+{
+  "metadata": {
+    "guid": "my-migrator-instance",
+    "url": "/v2/service_instances/my-migrator-instance",
+    "created_at": "2016-06-08T16:41:29Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "external-domain-broker-migrator",
+    "credentials": { },
+    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
+    "space_guid": "my-space-guid",
+    "gateway_data": null,
+    "dashboard_url": null,
+    "type": "managed_service_instance",
+    "last_operation": {
+      "type": "update",
+      "state": "in progress",
+      "description": "",
+      "updated_at": "2016-06-08T16:41:26Z",
+      "created_at": "2016-06-08T16:41:29Z"
+    },
+    "space_url": "/v2/spaces/my-space-guid",
+    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
+    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
+    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
+    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
+    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+  }
+}
+    """
+    fake_requests.put(
+        "http://localhost/v2/service_instances", text=response_body_update_instance
+    )
+
+    response_body_check_instance = """
+{
+  "metadata": {
+    "guid": "my-migrator-instance",
+    "url": "/v2/service_instances/my-migrator-instance",
+    "created_at": "2016-06-08T16:41:29Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "my-old-cdn",
+    "credentials": { },
+    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
+    "space_guid": "my-space-guid",
+    "gateway_data": null,
+    "dashboard_url": null,
+    "type": "managed_service_instance",
+    "last_operation": {
+      "type": "update",
+      "state": "succeeded",
+      "description": "",
+      "updated_at": "2016-06-08T16:41:26Z",
+      "created_at": "2016-06-08T16:41:29Z"
+    },
+    "space_url": "/v2/spaces/my-space-guid",
+    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
+    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
+    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
+    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
+    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+  }
+}
+    """
+
+    fake_requests.put(
+        "http://localhost/v2/service_instances/migrator-instance-id",
+        text=response_body_update_instance,
+        additional_matcher=name_matcher,
+    )
+
+    fake_requests.get(
+        "http://localhost/v2/service_instances/migrator-instance-id",
+        text=response_body_check_instance,
+    )
+
+    migration.external_domain_broker_service_instance = "migrator-instance-id"
+    migration.update_instance_name()
+
+    assert fake_requests.request_history[-2].method == "PUT"
+    assert (
+        fake_requests.request_history[-2].url
+        == "http://localhost/v2/service_instances/migrator-instance-id"
+    )
+    assert fake_requests.request_history[-1].method == "GET"
+    assert (
+        fake_requests.request_history[-1].url
+        == "http://localhost/v2/service_instances/migrator-instance-id"
+    )
+
+
 def test_migration_marks_route_migrated(clean_db, fake_cf_client, migration):
     migration.mark_complete()
     assert migration.route.state == "migrated"

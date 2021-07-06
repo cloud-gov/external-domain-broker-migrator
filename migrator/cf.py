@@ -75,9 +75,16 @@ def get_migrator_service_instance_status(instance_id, client):
     return response["entity"]["last_operation"]["state"]
 
 
-def update_existing_cdn_domain_service_instance(instance_id, params, client):
+def update_existing_cdn_domain_service_instance(
+    instance_id, params, client, *, new_instance_name=None
+):
     logger.debug("updating service instance %s", instance_id)
-    return client.v2.service_instances.update(instance_id, parameters=params)
+    kwargs = {}
+    if new_instance_name is not None:
+        kwargs["instance_name"] = new_instance_name
+    return client.v2.service_instances.update(
+        instance_id, parameters=params, instance_name=new_instance_name
+    )
 
 
 def purge_service_instance(instance_id, client):

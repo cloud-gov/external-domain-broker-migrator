@@ -325,6 +325,15 @@ class Migration:
     def purge_old_instance(self):
         cf.purge_service_instance(self.route.instance_id, self.client)
 
+    def update_instance_name(self):
+        cf.update_existing_cdn_domain_service_instance(
+            self.external_domain_broker_service_instance,
+            {},
+            self.client,
+            new_instance_name=self.instance_name,
+        )
+        self.check_instance_status()
+
     def mark_complete(self):
         self.route.state = "migrated"
         self.session.commit()
