@@ -11,6 +11,7 @@ from migrator.extensions import (
     route53,
     migration_plan_guid,
     migration_plan_instance_name,
+    domain_with_cdn_plan_guid,
 )
 from migrator.models import CdnRoute
 
@@ -250,7 +251,10 @@ class Migration:
         }
 
         cf.update_existing_cdn_domain_service_instance(
-            self.external_domain_broker_service_instance, params, self.client
+            self.external_domain_broker_service_instance,
+            params,
+            self.client,
+            new_plan_guid=domain_with_cdn_plan_guid,
         )
 
         self.check_instance_status()
