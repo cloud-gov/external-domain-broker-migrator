@@ -301,6 +301,14 @@ def test_migration_gets_org_id(clean_db, fake_cf_client, fake_requests, migratio
 def test_migration_enables_plan_in_org(
     clean_db, fake_cf_client, fake_requests, migration
 ):
+    def service_plan_visibility_matcher(request):
+        params = request.json()
+        plan = "739e78F5-a919-46ef-9193-1293cc086c17"
+        return (
+            params["organization_guid"] == "my-org-guid"
+            and params["service_plan_guid"] == plan
+        )
+
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
@@ -321,7 +329,9 @@ def test_migration_enables_plan_in_org(
 }
     """
     fake_requests.post(
-        "http://localhost/v2/service_plan_visibilities", text=response_body
+        "http://localhost/v2/service_plan_visibilities",
+        text=response_body,
+        additional_matcher=service_plan_visibility_matcher,
     )
 
     migration.enable_migration_service_plan()
@@ -673,7 +683,36 @@ def test_create_bare_migrator_instance_in_org_space_timeout_failure(
 
 
 def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests, migration):
-    migration.route.dist_id = "some-distribution-id"
+    def update_instance_matcher(request):
+        body = request.json()
+        name = body.get("name")
+        service_plan_guid = body.get("service_plan_guid")
+        params = body.get("parameters", {})
+        assert name is None
+        assert service_plan_guid == "1cc78b0c-c296-48f5-9182-0b38404f79ef"
+        assert params["origin"] == "example.gov"
+        assert params["path"] == "/example-gov"
+        assert params["forwarded_cookies"] == ["white-listed-name"]
+        assert params["forward_cookie_policy"] == "whitelist"
+        assert params["forwarded_headers"] == ["white-listed-name-header"]
+        assert params["insecure_origin"] == False
+        assert params["cloudfront_distribution_id"] == "sample-distribution-id"
+        assert (
+            params["cloudfront_distribution_arn"]
+            == "aws:arn:cloudfront:my-cloudfront-distribution"
+        )
+        assert params["iam_server_certificate_name"] == "my-server-cert"
+        assert params["iam_server_certificate_id"] == "my-server-cert-id"
+        assert params["iam_server_certificate_arn"] == "aws:arn:iam:my-server-cert"
+        error_config = params["error_responses"]
+        assert error_config.get("500") == "/five-hundred"
+        assert error_config.get("404") == "/four-oh-four"
+
+        # the matcher API from requests_mock actually wants us to return False for a failed match
+        # and True for a good match. We use assertions instead so the error is meaningful, but we
+        # need to return True when we are done anyway
+        return True
+
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
     migration.external_domain_broker_service_instance = "my-migrator-instance"
@@ -686,7 +725,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests, mig
                     {
                         "Id": "my-custom-domain-id",
                         "DomainName": "example.gov",
-                        "OriginPath": "example.gov",
+                        "OriginPath": "/example-gov",
                         "S3OriginConfig": None,
                         "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
                     }
@@ -723,8 +762,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests, mig
                 ],
             },
             "ViewerCertificate": {
-                "IAMCertificateId": "my-cloudfront-cert-id",
-                "ACMCertificateArn": "aws:arn:acm:my-cloudfront-cert",
+                "IAMCertificateId": "my-server-cert-id",
                 "Certificate": "my-cloudfront-cert",
             },
         },
@@ -773,10 +811,6 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests, mig
   }
 }
     """
-    fake_requests.put(
-        "http://localhost/v2/service_instances", text=response_body_update_instance
-    )
-
     response_body_check_instance = """
 {
   "metadata": {
@@ -816,6 +850,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, fake_requests, mig
     fake_requests.put(
         "http://localhost/v2/service_instances/my-migrator-instance",
         text=response_body_update_instance,
+        additional_matcher=update_instance_matcher,
     )
 
     fake_requests.get(
@@ -1218,7 +1253,10 @@ def test_find_iam_server_certificate_data_without_finding_result(
 def test_migration_renames_instance(clean_db, fake_cf_client, migration, fake_requests):
     # the migration fixture gives us the name "my-old-cdn"
     def name_matcher(request):
-        return request.json().get("name") == "my-old-cdn"
+        assert request.json().get("name") == "my-old-cdn"
+        assert request.json().get("parameters") == {}
+        assert request.json().get("plan_guid") == None
+        return True
 
     response_body_update_instance = """
 {
