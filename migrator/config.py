@@ -27,6 +27,9 @@ class LocalConfig(Config):
         self.TESTING = True
         self.DEBUG = True
         self.CDN_BROKER_DATABASE_URI = "postgresql://localhost/local-development-cdn"
+        self.DOMAIN_BROKER_DATABASE_URI = (
+            "postgresql://localhost/local-development-domain"
+        )
         self.DNS_VERIFICATION_SERVER = "127.0.0.1:8053"
         self.DNS_ROOT_DOMAIN = "domains.cloud.test"
         self.AWS_COMMERCIAL_REGION = "us-west-1"
@@ -50,9 +53,8 @@ class AppConfig(Config):
         super().__init__()
         cdn_db = self.cf_env_parser.get_service(name="rds-cdn-broker")
         self.CDN_BROKER_DATABASE_URI = cdn_db.credentials["uri"]
-        external_domain_db = self.cf_env_parser.get_service(
-            name="external-domain-broker-psql"
-        )
+        alb_db = self.cf_env_parser.get_service(name="rds-domain-broker")
+        self.DOMAIN_BROKER_DATABASE_URI = alb_db.credentials["uri"]
         self.DNS_VERIFICATION_SERVER = "8.8.8.8:53"
         self.DNS_ROOT_DOMAIN = self.env_parser("DNS_ROOT_DOMAIN")
         self.AWS_COMMERCIAL_REGION = self.env_parser("AWS_COMMERCIAL_REGION")

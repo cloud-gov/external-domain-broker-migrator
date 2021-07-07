@@ -1,5 +1,5 @@
 import pytest
-from migrator.db import session_handler, cdn_engine
+from migrator.db import session_handler, cdn_engine, domain_engine
 
 
 @pytest.fixture
@@ -8,11 +8,19 @@ def clean_db():
         session.execute("TRUNCATE TABLE user_data", bind=cdn_engine)
         session.execute("TRUNCATE TABLE routes", bind=cdn_engine)
         session.execute("TRUNCATE TABLE certificates", bind=cdn_engine)
+        session.execute("TRUNCATE TABLE user_data", bind=domain_engine)
+        session.execute("TRUNCATE TABLE routes", bind=domain_engine)
+        session.execute("TRUNCATE TABLE certificates", bind=domain_engine)
+        session.execute("TRUNCATE TABLE alb_proxies", bind=domain_engine)
         session.commit()
         session.close()
         yield session
         session.execute("TRUNCATE TABLE user_data", bind=cdn_engine)
         session.execute("TRUNCATE TABLE routes", bind=cdn_engine)
         session.execute("TRUNCATE TABLE certificates", bind=cdn_engine)
+        session.execute("TRUNCATE TABLE user_data", bind=domain_engine)
+        session.execute("TRUNCATE TABLE routes", bind=domain_engine)
+        session.execute("TRUNCATE TABLE certificates", bind=domain_engine)
+        session.execute("TRUNCATE TABLE alb_proxies", bind=domain_engine)
         session.commit()
         session.close()
