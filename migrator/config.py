@@ -72,6 +72,15 @@ class AppConfig(Config):
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 10
         self.MIGRATION_TIME = self.env_parser("MIGRATION_TIME", "11:00:00")
 
+        self.SMTP_HOST = self.env_parser("SMTP_HOST")
+        self.SMTP_FROM = self.env_parser("SMTP_FROM")
+        self.SMTP_CERT = self.env_parser("SMTP_CERT")
+        self.SMTP_USER = self.env_parser("SMTP_USER")
+        self.SMTP_PASS = self.env_parser("SMTP_PASS")
+        self.SMTP_PORT = self.env_parser.int("SMTP_PORT")
+        self.SMTP_TO = self.env_parser("SMTP_TO")
+        self.SMTP_TLS = True
+
 
 class DevelopmentConfig(AppConfig):
     def __init__(self):

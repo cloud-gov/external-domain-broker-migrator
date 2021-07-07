@@ -73,6 +73,13 @@ jobs:
         CF_USERNAME: ((dev-cf-username))
         CF_PASSWORD: ((dev-cf-password))
         CF_API_ENDPOINT: ((dev-cf-api-endpoint))
+        SMTP_HOST: ((dev-smtp-host))
+        SMTP_FROM: ((dev-smtp-from))
+        SMTP_CERT: ((dev-smtp-cert))
+        SMTP_USER: ((dev-smtp-user))
+        SMTP_PASS: ((dev-smtp-pass))
+        SMTP_PORT: ((dev-smtp-port))
+        SMTP_TO: ((dev-smtp-to))
 
   on_failure:
     put: slack
@@ -119,6 +126,13 @@ jobs:
         CF_USERNAME: ((staging-cf-username))
         CF_PASSWORD: ((staging-cf-password))
         CF_API_ENDPOINT: ((staging-cf-api-endpoint))
+        SMTP_HOST: ((staging-smtp-host))
+        SMTP_FROM: ((staging-smtp-from))
+        SMTP_CERT: ((staging-smtp-cert))
+        SMTP_USER: ((staging-smtp-user))
+        SMTP_PASS: ((staging-smtp-pass))
+        SMTP_PORT: ((staging-smtp-port))
+        SMTP_TO: ((staging-smtp-to))
 
   on_failure:
     put: slack

@@ -14,6 +14,7 @@ from migrator.extensions import (
     domain_with_cdn_plan_guid,
 )
 from migrator.models import CdnRoute
+from migrator.smtp import send_email
 
 logger = logging.getLogger(__name__)
 
@@ -343,13 +344,32 @@ class Migration:
         self.session.commit()
 
     def migrate(self):
-        self.enable_migration_service_plan()
-        self.create_bare_migrator_instance_in_org_space()
-        self.update_existing_cdn_domain()
-        self.disable_migration_service_plan()
-        self.purge_old_instance()
-        self.update_instance_name()
-        self.mark_complete()
+        try:
+            self.enable_migration_service_plan()
+            self.create_bare_migrator_instance_in_org_space()
+            self.update_existing_cdn_domain()
+            self.disable_migration_service_plan()
+            self.purge_old_instance()
+            self.update_instance_name()
+            self.mark_complete()
+        except Exception as e:
+            self.send_failed_operation_alert(e)
+            # the goal here is to try to make it easier to find the logs in Kibana
+            # since we can't just email ourselves the stack trace
+            logger.exception("failed migrating %s", repr(self))
+            raise
+
+    def send_failed_operation_alert(self, exception):
+        subject = f"[{config.ENV}] - external-domain-broker-migrator migration failed"
+        body = f"""
+<h1>Migration failed unexpectedly!</h1>
+
+migration: {repr(self)}
+        """
+        send_email(config.SMTP_TO, subject, body)
+
+    def __repr__(self):
+        return f"<instance_name={self.instance_name}, route={self.route.instance_id}, domains={self.route.domain_external}, domain_instance={self.external_domain_broker_service_instance}, space_id={self._space_id}, org_id={self._org_id}>"
 
     @staticmethod
     def parse_cloudfront_error_response(error_responses):
