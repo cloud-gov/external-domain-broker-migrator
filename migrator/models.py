@@ -12,7 +12,7 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import (
 from migrator.extensions import config
 
 CdnBase = declarative.declarative_base()
-CustomDomainBase = declarative.declarative_base()
+DomainBase = declarative.declarative_base()
 
 
 def db_encryption_key():
@@ -87,27 +87,27 @@ class CdnCertificate(CdnBase):
     expires = sa.Column(postgresql.TIMESTAMP)
 
 
-class CustomDomainRoute(CustomDomainBase):
+class DomainRoute(DomainBase):
     __tablename__ = "routes"
 
     guid = sa.Column(sa.Text, primary_key=True)
     state = sa.Column(sa.Text)
-    domains = sa.Column(sa.Text)
+    domains = sa.Column(postgresql.ARRAY(sa.Text))
     challenge_json = sa.Column(postgresql.BYTEA)
     user_data_id = sa.Column(sa.Integer)
     alb_proxy_arn = sa.Column(sa.Text)
-    certificates = orm.relationship("CustomDomainCertificate")
+    certificates = orm.relationship("DomainCertificate")
 
 
-class CustomDomainCertificate(CustomDomainBase):
+class DomainCertificate(DomainBase):
     __tablename__ = "certificates"
 
     id = sa.Column(sa.Integer, primary_key=True)
     created_at = sa.Column(postgresql.TIMESTAMP)
     updated_at = sa.Column(postgresql.TIMESTAMP)
     deleted_at = sa.Column(postgresql.TIMESTAMP)
-    route_guid = sa.Column(sa.Integer, sa.ForeignKey(CustomDomainRoute.guid))
-    route = orm.relationship(CustomDomainRoute, back_populates="certificates")
+    route_guid = sa.Column(sa.Integer, sa.ForeignKey(DomainRoute.guid))
+    route = orm.relationship(DomainRoute, back_populates="certificates")
     domain = sa.Column(sa.Text)
     # cert_url is the Let's Encrypt URL for the certificate
     cert_url = sa.Column(sa.Text)
@@ -118,7 +118,7 @@ class CustomDomainCertificate(CustomDomainBase):
     expires = sa.Column(postgresql.TIMESTAMP)
 
 
-class CustomDomainUserData(CustomDomainBase):
+class DomainUserData(DomainBase):
     __tablename__ = "user_data"
 
     id = sa.Column(sa.Integer, primary_key=True)
@@ -130,7 +130,7 @@ class CustomDomainUserData(CustomDomainBase):
     key = sa.Column(postgresql.BYTEA)
 
 
-class CustomDomainAlbProxies(CustomDomainBase):
+class DomainAlbProxies(DomainBase):
     __tablename__ = "alb_proxies"
 
     alb_arn = sa.Column(sa.Integer, primary_key=True)

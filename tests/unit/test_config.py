@@ -42,7 +42,23 @@ def vcap_services():
                 "plan": "medium-psql",
                 "tags": ["database", "RDS"],
             }
-        ]
+        ],
+        "user-provided": [
+            {
+                "credentials": {
+                    "db_name": "alb-db-name",
+                    "host": "alb-db-host",
+                    "password": "alb-db-password",
+                    "port": "alb-db-port",
+                    "uri": "alb-db-uri",
+                    "username": "alb-db-username",
+                },
+                "instance_name": "rds-domain-broker",
+                "label": "aws-rds",
+                "name": "rds-domain-broker",
+                "tags": ["database", "RDS"],
+            }
+        ],
     }
 
     return json.dumps(data)
@@ -75,6 +91,7 @@ def test_config_gets_credentials(env, monkeypatch, mocked_env):
     monkeypatch.setenv("ENV", env)
     config = config_from_env()
     assert config.CDN_BROKER_DATABASE_URI == "cdn-db-uri"
+    assert config.DOMAIN_BROKER_DATABASE_URI == "alb-db-uri"
     assert config.AWS_COMMERCIAL_REGION == "us-west-1"
     assert config.AWS_COMMERCIAL_ACCESS_KEY_ID == "ASIANOTAREALKEY"
     assert config.AWS_COMMERCIAL_SECRET_ACCESS_KEY == "NOT_A_REAL_SECRET_KEY"
