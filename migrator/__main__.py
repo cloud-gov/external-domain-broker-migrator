@@ -7,13 +7,13 @@ from migrator.extensions import config
 from migrator.db import check_connections, session_handler
 from migrator.migration import migrate_ready_instances
 from migrator.cf import get_cf_client
+from migrator.smtp import send_report_email
 
 
 def run_and_report():
     with session_handler() as session:
         results = migrate_ready_instances(session, get_cf_client(config))
-    # todo: report results
-    print(results)
+    send_report_email(results)
 
 
 def main():
