@@ -26,3 +26,24 @@ def send_email(email, subject, body):
 
     s.sendmail(config.SMTP_FROM, [email], msg.as_string())
     s.quit()
+
+
+def send_report_email(results):
+    # results is a dict with keys "migrated", "failure", "skipped"
+    subject = f"[{config.ENV}] - migrations completed!"
+    nl = "\n"
+    body = f"""
+<h1>Migrator finished running for today!</h1>
+
+<h2>Summary</h2>
+
+Migrated: {len(results['migrated'])}
+Failed: {len(results['failed'])}
+Skipped: {len(results['skipped'])}
+
+<h2>Failed instances</h2>
+
+{nl.join(results['failed'])}
+
+        """
+    send_email(config.SMTP_TO, subject, body)
