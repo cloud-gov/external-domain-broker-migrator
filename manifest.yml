@@ -8,7 +8,7 @@ applications:
   health-check-type: process
   services:
   - ((CDN_DB_NAME))
-  - ((EXTERNAL_DOMAIN_DB_NAME))
+  - ((DOMAIN_DB_NAME))
   buildpacks:
   - python_buildpack
   env:

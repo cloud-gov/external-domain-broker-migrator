@@ -3,7 +3,7 @@ cf-manifest-vars: &cf-manifest-vars
   vars:
     APP_NAME: ((name))
     CDN_DB_NAME: ((cdn_db_name))
-    EXTERNAL_DOMAIN_DB_NAME: ((external_domain_db_name))
+    DOMAIN_DB_NAME: ((domain_db_name))
 
 jobs:
 
