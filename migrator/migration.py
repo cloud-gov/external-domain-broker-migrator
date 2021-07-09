@@ -46,16 +46,13 @@ def migrate_ready_instances(session, client):
 
 
 class Migration:
-    def __init__(self, route: CdnRoute, session, client):
+    def __init__(self, route, session, client):
         self.domains = route.domain_external.split(",")
         self.instance_id = route.instance_id
         self.domain_internal = route.domain_internal
-        self.cloudfront_distribution_id = route.dist_id
         self.route = route
-        self._cloudfront_distribution_data = None
         self.session = session
         self.client = client
-        self.external_domain_broker_service_instance = None
         self._space_id = None
         self._org_id = None
         self._iam_server_certificate_data = None
@@ -73,6 +70,171 @@ class Migration:
         if not self.domains:
             return False
         return all([has_expected_cname(domain) for domain in self.domains])
+
+    @property
+    def iam_certificate_id(self):
+        return self.cloudfront_distribution_config["ViewerCertificate"][
+            "IAMCertificateId"
+        ]
+
+    @property
+    def iam_certificate_name(self):
+        return self.iam_server_certificate_data["ServerCertificateName"]
+
+    @property
+    def iam_certificate_arn(self):
+        return self.iam_server_certificate_data["Arn"]
+
+    @property
+    def space_id(self):
+        if self._space_id is None:
+            self._space_id = cf.get_space_id_for_service_instance_id(
+                self.instance_id, self.client
+            )
+        return self._space_id
+
+    @property
+    def org_id(self):
+        if self._org_id is None:
+            self._org_id = cf.get_org_id_for_space_id(self.space_id, self.client)
+        return self._org_id
+
+    @property
+    def service_plan_visibility_ids(self):
+        return cf.get_service_plan_visibility_ids_for_org(
+            migration_plan_guid, self.org_id, self.client
+        )
+
+    def enable_migration_service_plan(self):
+        cf.enable_plan_for_org(migration_plan_guid, self.org_id, self.client)
+
+    def disable_migration_service_plan(self):
+        for service_plan_visibility_id in self.service_plan_visibility_ids:
+            cf.disable_plan_for_org(service_plan_visibility_id, self.client)
+
+    def create_bare_migrator_instance_in_org_space(self):
+        logger.debug("creating bare instance for %s", self.instance_id)
+        instance_info = cf.create_bare_migrator_service_instance_in_space(
+            self.space_id,
+            migration_plan_guid,
+            migration_plan_instance_name,
+            self.client,
+        )
+
+        self.external_domain_broker_service_instance = instance_info["guid"]
+
+        self.check_instance_status()
+
+    def upsert_dns(self):
+        logger.debug("upserting DNS for %s", self.instance_id)
+        change_ids = []
+        for domain in self.domains:
+            alias_record = f"{domain}.{config.DNS_ROOT_DOMAIN}"
+            target = self.domain_internal
+            route53_response = route53.change_resource_record_sets(
+                ChangeBatch={
+                    "Changes": [
+                        {
+                            "Action": "UPSERT",
+                            "ResourceRecordSet": {
+                                "Type": "A",
+                                "Name": alias_record,
+                                "AliasTarget": {
+                                    "DNSName": target,
+                                    "HostedZoneId": self.hosted_zone_id,
+                                    "EvaluateTargetHealth": False,
+                                },
+                            },
+                        },
+                        {
+                            "Action": "UPSERT",
+                            "ResourceRecordSet": {
+                                "Type": "AAAA",
+                                "Name": alias_record,
+                                "AliasTarget": {
+                                    "DNSName": target,
+                                    "HostedZoneId": self.hosted_zone_id,
+                                    "EvaluateTargetHealth": False,
+                                },
+                            },
+                        },
+                    ]
+                },
+                HostedZoneId=config.ROUTE53_ZONE_ID,
+            )
+            change_ids.append(route53_response["ChangeInfo"]["Id"])
+        for change_id in change_ids:
+            waiter = route53.get_waiter("resource_record_sets_changed")
+            waiter.wait(
+                Id=change_id,
+                WaiterConfig={
+                    "Delay": config.AWS_POLL_WAIT_TIME_IN_SECONDS,
+                    "MaxAttempts": config.AWS_POLL_MAX_ATTEMPTS,
+                },
+            )
+
+    def check_instance_status(self):
+        retries = config.SERVICE_CHANGE_RETRY_COUNT
+
+        while retries:
+            status = cf.get_migrator_service_instance_status(
+                self.external_domain_broker_service_instance, self.client
+            )
+
+            if status == "succeeded":
+                return
+
+            if status == "failed":
+                raise Exception("Creation of migrator service instance failed.")
+
+            retries -= 1
+            time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
+
+        raise Exception("Checking migrator service instance timed out.")
+
+    def check_instance_status(self):
+        retries = config.SERVICE_CHANGE_RETRY_COUNT
+
+        while retries:
+            status = cf.get_migrator_service_instance_status(
+                self.external_domain_broker_service_instance, self.client
+            )
+
+            if status == "succeeded":
+                return
+
+            if status == "failed":
+                raise Exception("Creation of migrator service instance failed.")
+
+            retries -= 1
+            time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
+
+        raise Exception("Checking migrator service instance timed out.")
+
+    def purge_old_instance(self):
+        cf.purge_service_instance(self.route.instance_id, self.client)
+
+    def update_instance_name(self):
+        cf.update_existing_cdn_domain_service_instance(
+            self.external_domain_broker_service_instance,
+            {},
+            self.client,
+            new_instance_name=self.instance_name,
+        )
+        self.check_instance_status()
+
+    def mark_complete(self):
+        self.route.state = "migrated"
+        self.session.commit()
+
+
+class CdnMigration(Migration):
+    def __init__(self, route, session, client):
+        super().__init__(route, session, client)
+        self.cloudfront_distribution_id = route.dist_id
+        self._cloudfront_distribution_data = None
+        self.external_domain_broker_service_instance = None
+        self.hosted_zone_id = config.CLOUDFRONT_HOSTED_ZONE_ID
 
     @property
     def cloudfront_distribution_data(self):
@@ -147,7 +309,7 @@ class Migration:
 
     @property
     def custom_error_responses(self):
-        return Migration.parse_cloudfront_error_response(
+        return CdnMigration.parse_cloudfront_error_response(
             self.cloudfront_distribution_config["CustomErrorResponses"]
         )
 
@@ -179,60 +341,6 @@ class Migration:
             if origin.get("S3OriginConfig") is None:
                 return origin
 
-    @property
-    def iam_certificate_id(self):
-        return self.cloudfront_distribution_config["ViewerCertificate"][
-            "IAMCertificateId"
-        ]
-
-    @property
-    def iam_certificate_name(self):
-        return self.iam_server_certificate_data["ServerCertificateName"]
-
-    @property
-    def iam_certificate_arn(self):
-        return self.iam_server_certificate_data["Arn"]
-
-    @property
-    def space_id(self):
-        if self._space_id is None:
-            self._space_id = cf.get_space_id_for_service_instance_id(
-                self.instance_id, self.client
-            )
-        return self._space_id
-
-    @property
-    def org_id(self):
-        if self._org_id is None:
-            self._org_id = cf.get_org_id_for_space_id(self.space_id, self.client)
-        return self._org_id
-
-    @property
-    def service_plan_visibility_ids(self):
-        return cf.get_service_plan_visibility_ids_for_org(
-            migration_plan_guid, self.org_id, self.client
-        )
-
-    def enable_migration_service_plan(self):
-        cf.enable_plan_for_org(migration_plan_guid, self.org_id, self.client)
-
-    def disable_migration_service_plan(self):
-        for service_plan_visibility_id in self.service_plan_visibility_ids:
-            cf.disable_plan_for_org(service_plan_visibility_id, self.client)
-
-    def create_bare_migrator_instance_in_org_space(self):
-        logger.debug("creating bare instance for %s", self.instance_id)
-        instance_info = cf.create_bare_migrator_service_instance_in_space(
-            self.space_id,
-            migration_plan_guid,
-            migration_plan_instance_name,
-            self.client,
-        )
-
-        self.external_domain_broker_service_instance = instance_info["guid"]
-
-        self.check_instance_status()
-
     def update_existing_cdn_domain(self):
         logger.debug("updating bare instance for %s", self.instance_id)
         params = {
@@ -259,89 +367,6 @@ class Migration:
         )
 
         self.check_instance_status()
-
-    def check_instance_status(self):
-        retries = config.SERVICE_CHANGE_RETRY_COUNT
-
-        while retries:
-            status = cf.get_migrator_service_instance_status(
-                self.external_domain_broker_service_instance, self.client
-            )
-
-            if status == "succeeded":
-                return
-
-            if status == "failed":
-                raise Exception("Creation of migrator service instance failed.")
-
-            retries -= 1
-            time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
-
-        raise Exception("Checking migrator service instance timed out.")
-
-    def upsert_dns(self):
-        logger.debug("upserting DNS for %s", self.instance_id)
-        change_ids = []
-        for domain in self.domains:
-            alias_record = f"{domain}.{config.DNS_ROOT_DOMAIN}"
-            target = self.domain_internal
-            route53_response = route53.change_resource_record_sets(
-                ChangeBatch={
-                    "Changes": [
-                        {
-                            "Action": "UPSERT",
-                            "ResourceRecordSet": {
-                                "Type": "A",
-                                "Name": alias_record,
-                                "AliasTarget": {
-                                    "DNSName": target,
-                                    "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
-                                    "EvaluateTargetHealth": False,
-                                },
-                            },
-                        },
-                        {
-                            "Action": "UPSERT",
-                            "ResourceRecordSet": {
-                                "Type": "AAAA",
-                                "Name": alias_record,
-                                "AliasTarget": {
-                                    "DNSName": target,
-                                    "HostedZoneId": config.CLOUDFRONT_HOSTED_ZONE_ID,
-                                    "EvaluateTargetHealth": False,
-                                },
-                            },
-                        },
-                    ]
-                },
-                HostedZoneId=config.ROUTE53_ZONE_ID,
-            )
-            change_ids.append(route53_response["ChangeInfo"]["Id"])
-        for change_id in change_ids:
-            waiter = route53.get_waiter("resource_record_sets_changed")
-            waiter.wait(
-                Id=change_id,
-                WaiterConfig={
-                    "Delay": config.AWS_POLL_WAIT_TIME_IN_SECONDS,
-                    "MaxAttempts": config.AWS_POLL_MAX_ATTEMPTS,
-                },
-            )
-
-    def purge_old_instance(self):
-        cf.purge_service_instance(self.route.instance_id, self.client)
-
-    def update_instance_name(self):
-        cf.update_existing_cdn_domain_service_instance(
-            self.external_domain_broker_service_instance,
-            {},
-            self.client,
-            new_instance_name=self.instance_name,
-        )
-        self.check_instance_status()
-
-    def mark_complete(self):
-        self.route.state = "migrated"
-        self.session.commit()
 
     def migrate(self):
         try:
