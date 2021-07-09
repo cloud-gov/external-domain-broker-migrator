@@ -26,8 +26,9 @@ def test_find_instances(clean_db):
 
 
 def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
-    dns.add_cname("_acme-challenge.example.com")
-    migration.domains = ["example.com"]
+    dns.add_cname("_acme-challenge.www.example.com")
+    dns.add_cname("www.example.com")
+    migration.domains = ["www.example.com"]
     assert migration.has_valid_dns
 
 
@@ -37,8 +38,21 @@ def test_validate_bad_dns(clean_db, dns, fake_cf_client, migration):
 
 
 def test_validate_mixed_good_and_bad_dns(clean_db, dns, fake_cf_client, migration):
-    dns.add_cname("_acme-challenge.example.com")
-    migration.domains = ["example.com", "foo.example.com"]
+    dns.add_cname("_acme-challenge.www.example.com")
+    dns.add_cname("www.example.com")
+    migration.domains = ["www.example.com", "foo.example.com"]
+    assert not migration.has_valid_dns
+
+
+def test_validate_site_exists_acme_doesnt(clean_db, dns, fake_cf_client, migration):
+    dns.add_cname("www.example.com")
+    migration.domains = ["www.example.com"]
+    assert not migration.has_valid_dns
+
+
+def test_validate_acme_exists_site_doesnt(clean_db, dns, fake_cf_client, migration):
+    dns.add_cname("_acme-challenge.www.example.com")
+    migration.domains = ["www.example.com"]
     assert not migration.has_valid_dns
 
 
