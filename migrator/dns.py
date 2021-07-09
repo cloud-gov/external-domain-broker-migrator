@@ -38,6 +38,10 @@ def get_txt(domain: str) -> list:
         return []
 
 
+def site_cname_target(domain: str) -> str:
+    return f"{domain}.{_root_dns}"
+
+
 def acme_challenge_cname_target(domain: str) -> str:
     return f"_acme-challenge.{domain}.{_root_dns}"
 
@@ -47,9 +51,11 @@ def acme_challenge_cname_name(domain: str) -> str:
 
 
 def has_expected_cname(domain: str) -> bool:
-    return get_cname(acme_challenge_cname_name(domain)) == acme_challenge_cname_target(
-        domain
-    )
+    acme_good = get_cname(
+        acme_challenge_cname_name(domain)
+    ) == acme_challenge_cname_target(domain)
+    site_good = get_cname(domain) == site_cname_target(domain)
+    return acme_good and site_good
 
 
 def has_expected_semaphore(domain: str) -> bool:
