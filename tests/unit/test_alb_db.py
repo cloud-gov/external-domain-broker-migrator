@@ -21,15 +21,14 @@ def test_can_create_route():
     # but this is a test we can do with an empty database
     with db.session_handler() as session:
         route = models.DomainRoute()
-        route.guid = "12345"
-        route.instance_id = "disposable-route-id"
+        route.instance_id = "12345"
         route.state = "deprovisioned"
         route.domains = ["example1.com", "example2.com", "example3.com"]
 
         session.add(route)
         session.commit()
 
-        route = session.query(models.DomainRoute).filter_by(guid="12345").first()
+        route = session.query(models.DomainRoute).filter_by(instance_id="12345").first()
         session.delete(route)
         session.commit()
         session.close()

@@ -16,7 +16,7 @@ def test_find_instances(clean_db):
     for state in states:
         domain_route = DomainRoute()
         domain_route.state = state
-        domain_route.guid = f"id-{state}"
+        domain_route.instance_id = f"id-{state}"
         cdn_route = CdnRoute()
         cdn_route.state = state
         cdn_route.instance_id = f"id-{state}"

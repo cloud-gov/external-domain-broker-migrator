@@ -90,7 +90,7 @@ class CdnCertificate(CdnBase):
 class DomainRoute(DomainBase):
     __tablename__ = "routes"
 
-    guid = sa.Column(sa.Text, primary_key=True)
+    instance_id = sa.Column("guid", sa.Text, primary_key=True)
     state = sa.Column(sa.Text)
     domains = sa.Column(postgresql.ARRAY(sa.Text))
     challenge_json = sa.Column(postgresql.BYTEA)
@@ -106,7 +106,7 @@ class DomainCertificate(DomainBase):
     created_at = sa.Column(postgresql.TIMESTAMP)
     updated_at = sa.Column(postgresql.TIMESTAMP)
     deleted_at = sa.Column(postgresql.TIMESTAMP)
-    route_guid = sa.Column(sa.Integer, sa.ForeignKey(DomainRoute.guid))
+    route_guid = sa.Column(sa.Integer, sa.ForeignKey(DomainRoute.instance_id))
     route = orm.relationship(DomainRoute, back_populates="certificates")
     domain = sa.Column(sa.Text)
     # cert_url is the Let's Encrypt URL for the certificate
