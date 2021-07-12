@@ -3,7 +3,7 @@ import datetime
 import pytest
 
 from migrator.migration import find_active_instances, Migration
-from migrator.models import CdnRoute
+from migrator.models import CdnRoute, DomainRoute
 
 
 def test_find_instances(clean_db):
@@ -14,15 +14,20 @@ def test_find_instances(clean_db):
         "this-state-should-never-exist",
     ]
     for state in states:
-        route = CdnRoute()
-        route.state = state
-        route.instance_id = f"id-{state}"
-        clean_db.add(route)
+        domain_route = DomainRoute()
+        domain_route.state = state
+        domain_route.guid = f"id-{state}"
+        cdn_route = CdnRoute()
+        cdn_route.state = state
+        cdn_route.instance_id = f"id-{state}"
+        clean_db.add(domain_route)
+        clean_db.add(cdn_route)
     clean_db.commit()
     clean_db.close()
     instances = find_active_instances(clean_db)
-    assert len(instances) == 1
+    assert len(instances) == 2
     assert instances[0].state == "provisioned"
+    assert instances[1].state == "provisioned"
 
 
 def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
