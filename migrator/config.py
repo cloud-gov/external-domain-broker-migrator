@@ -38,6 +38,7 @@ class LocalConfig(Config):
         self.ROUTE53_ZONE_ID = "FAKEZONEID"
         # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
         self.CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2"
+        self.ALB_HOSTED_ZONE_ID = "FAKEZONEIDFORALBS"
         self.AWS_POLL_WAIT_TIME_IN_SECONDS = 0.01
         self.AWS_POLL_MAX_ATTEMPTS = 10
         self.CF_USERNAME = "fake-username"
@@ -65,6 +66,7 @@ class AppConfig(Config):
             "AWS_COMMERCIAL_SECRET_ACCESS_KEY"
         )
         self.ROUTE53_ZONE_ID = self.env_parser("ROUTE53_HOSTED_ZONE_ID")
+        self.ALB_HOSTED_ZONE_ID = self.env_parser("ALB_HOSTED_ZONE_ID")
         self.CF_USERNAME = self.env_parser("CF_USERNAME")
         self.CF_PASSWORD = self.env_parser("CF_PASSWORD")
         self.CF_API_ENDPOINT = self.env_parser("CF_API_ENDPOINT")
