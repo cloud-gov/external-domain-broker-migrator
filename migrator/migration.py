@@ -27,12 +27,18 @@ def find_active_instances(session):
     return (*cdn_routes, *domain_routes)
 
 
+def migration_for_route(route, session, client):
+    if isinstance(route, CdnRoute):
+        return CdnMigration(route, session, client)
+    return DomainMigration(route, session, client)
+
+
 def migrate_ready_instances(session, client):
     results = dict(migrated=[], skipped=[], failed=[])
     for route in find_active_instances(session):
         if route.has_valid_dns():
             try:
-                migration = Migration(route, session, client)
+                migration = migration_for_route(route, session, client)
                 migration.migrate()
             except Exception as e:
                 # todo: drop print when we add global handling
@@ -49,7 +55,6 @@ def migrate_ready_instances(session, client):
 
 class Migration:
     def __init__(self, route, session, client):
-        self.domains = route.domain_external.split(",")
         self.instance_id = route.instance_id
         self.domain_internal = route.domain_internal
         self.route = route
@@ -232,11 +237,12 @@ class Migration:
 
 class CdnMigration(Migration):
     def __init__(self, route, session, client):
-        super().__init__(route, session, client)
         self.cloudfront_distribution_id = route.dist_id
         self._cloudfront_distribution_data = None
         self.external_domain_broker_service_instance = None
         self.hosted_zone_id = config.CLOUDFRONT_HOSTED_ZONE_ID
+        self.domains = route.domain_external.split(",")
+        super().__init__(route, session, client)
 
     @property
     def cloudfront_distribution_data(self):
@@ -404,3 +410,9 @@ migration: {repr(self)}
         for item in error_responses.get("Items", []):
             responses[item["ResponseCode"]] = item["ResponsePagePath"]
         return responses
+
+
+class DomainMigration(Migration):
+    def __init__(self, route, session, client):
+        self.domains = route.domains
+        super().__init__(route, session, client)
