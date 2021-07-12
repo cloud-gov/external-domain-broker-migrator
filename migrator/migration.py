@@ -13,16 +13,18 @@ from migrator.extensions import (
     migration_plan_instance_name,
     domain_with_cdn_plan_guid,
 )
-from migrator.models import CdnRoute
+from migrator.models import CdnRoute, DomainRoute
 from migrator.smtp import send_email
 
 logger = logging.getLogger(__name__)
 
 
 def find_active_instances(session):
-    query = session.query(CdnRoute).filter(CdnRoute.state == "provisioned")
-    routes = query.all()
-    return routes
+    cdn_query = session.query(CdnRoute).filter(CdnRoute.state == "provisioned")
+    cdn_routes = cdn_query.all()
+    domain_query = session.query(DomainRoute).filter(DomainRoute.state == "provisioned")
+    domain_routes = domain_query.all()
+    return (*cdn_routes, *domain_routes)
 
 
 def migrate_ready_instances(session, client):
