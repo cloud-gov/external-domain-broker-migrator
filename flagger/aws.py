@@ -23,7 +23,7 @@ def create_semaphore(domain, dry_run=False):
     )
 
 
-def create_cdn_alias(internal_domain, cloudfront_domain):
+def create_cdn_alias(internal_domain, cloudfront_domain, dry_run):
     print(f"Creating ALIAS '{internal_domain}' => {cloudfront_domain}")
     if dry_run:
         return

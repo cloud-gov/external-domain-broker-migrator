@@ -20,7 +20,7 @@ def main():
         aws.create_semaphore(domain, dry_run)
     domain_cdns = queries.find_aliases()
     for domain_cdn in domain_cdns():
-        aws.create_cdn_alias(*domain_cdn)
+        aws.create_cdn_alias(*domain_cdn, dry_run)
 
 
 if __name__ == "__main__":
