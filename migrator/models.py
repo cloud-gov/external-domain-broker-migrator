@@ -98,6 +98,10 @@ class DomainRoute(DomainBase):
     alb_proxy_arn = sa.Column(sa.Text)
     certificates = orm.relationship("DomainCertificate")
 
+    def domain_external_list(self):
+        """to match CdnRoute"""
+        return domains
+
 
 class DomainCertificate(DomainBase):
     __tablename__ = "certificates"

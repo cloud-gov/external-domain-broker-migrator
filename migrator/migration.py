@@ -20,11 +20,22 @@ logger = logging.getLogger(__name__)
 
 
 def find_active_instances(session):
+    cdn_routes = find_active_cdn_instances(session)
+    domain_routes = find_active_domain_instances(session)
+    routes = [*cdn_routes, *domain_routes]
+    return routes
+
+
+def find_active_cdn_instances(session):
     cdn_query = session.query(CdnRoute).filter(CdnRoute.state == "provisioned")
     cdn_routes = cdn_query.all()
+    return cdn_routes
+
+
+def find_active_domain_instances(session):
     domain_query = session.query(DomainRoute).filter(DomainRoute.state == "provisioned")
     domain_routes = domain_query.all()
-    return (*cdn_routes, *domain_routes)
+    return domain_routes
 
 
 def migration_for_route(route, session, client):
