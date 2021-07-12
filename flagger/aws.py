@@ -59,3 +59,41 @@ def create_cdn_alias(internal_domain, cloudfront_domain, dry_run):
         },
         HostedZoneId=config.ROUTE53_ZONE_ID,
     )
+
+
+def create_domain_alias(internal_domain, alb_domain, dry_run):
+    print(f"Creating ALIAS '{internal_domain}' => {alb_domain}")
+    if dry_run:
+        return
+    alias_record = f"{internal_domain}.{config.DNS_ROOT_DOMAIN}"
+    route53_response = route53.change_resource_record_sets(
+        ChangeBatch={
+            "Changes": [
+                {
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                        "Type": "A",
+                        "Name": alias_record,
+                        "AliasTarget": {
+                            "DNSName": alb_domain,
+                            "HostedZoneId": config.ALB_HOSTED_ZONE_ID,
+                            "EvaluateTargetHealth": False,
+                        },
+                    },
+                },
+                {
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                        "Type": "AAAA",
+                        "Name": alias_record,
+                        "AliasTarget": {
+                            "DNSName": alb_domain,
+                            "HostedZoneId": config.ALB_HOSTED_ZONE_ID,
+                            "EvaluateTargetHealth": False,
+                        },
+                    },
+                },
+            ]
+        },
+        HostedZoneId=config.ROUTE53_ZONE_ID,
+    )

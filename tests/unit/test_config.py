@@ -74,6 +74,7 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("AWS_COMMERCIAL_ACCESS_KEY_ID", "ASIANOTAREALKEY")
     monkeypatch.setenv("AWS_COMMERCIAL_SECRET_ACCESS_KEY", "NOT_A_REAL_SECRET_KEY")
     monkeypatch.setenv("ROUTE53_HOSTED_ZONE_ID", "FAKEZONEID")
+    monkeypatch.setenv("ALB_HOSTED_ZONE_ID", "FAKEZONEIDFORALBS")
     monkeypatch.setenv("CF_USERNAME", "fake_cf_username")
     monkeypatch.setenv("CF_PASSWORD", "fake_cf_password")
     monkeypatch.setenv("CF_API_ENDPOINT", "https://localhost")
@@ -106,6 +107,7 @@ def test_config_gets_credentials(env, monkeypatch, mocked_env):
     assert config.CF_USERNAME == "fake_cf_username"
     assert config.CF_PASSWORD == "fake_cf_password"
     assert config.CF_API_ENDPOINT == "https://localhost"
+    assert config.ALB_HOSTED_ZONE_ID == "FAKEZONEIDFORALBS"
 
 
 @pytest.mark.parametrize("env", ["production", "staging", "development"])

@@ -109,7 +109,7 @@ class DomainRoute(DomainBase):
 
     def domain_external_list(self):
         """to match CdnRoute"""
-        return domains
+        return self.domains
 
 
 class DomainCertificate(DomainBase):
