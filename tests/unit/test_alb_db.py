@@ -32,3 +32,20 @@ def test_can_create_route():
         session.delete(route)
         session.commit()
         session.close()
+
+
+def test_route_proxy_relationship(clean_db):
+    proxy = models.DomainAlbProxy()
+    proxy.alb_arn = "arn:123"
+    proxy.alb_dns_name = "foo.example.com"
+    proxy.listener_arn = "arn:234"
+    clean_db.add(proxy)
+    clean_db.commit()
+    route = models.DomainRoute()
+    route.alb_proxy_arn = "arn:123"
+    route.instance_id = "1234"
+    route.state = "provisioned"
+    clean_db.add(route)
+    clean_db.commit()
+    route = clean_db.query(models.DomainRoute).filter_by(instance_id="1234").first()
+    assert route.alb_proxy.listener_arn == "arn:234"

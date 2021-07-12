@@ -87,6 +87,14 @@ class CdnCertificate(CdnBase):
     expires = sa.Column(postgresql.TIMESTAMP)
 
 
+class DomainAlbProxy(DomainBase):
+    __tablename__ = "alb_proxies"
+
+    alb_arn = sa.Column(sa.Text, primary_key=True)
+    alb_dns_name = sa.Column(sa.Text)
+    listener_arn = sa.Column(sa.Text)
+
+
 class DomainRoute(DomainBase):
     __tablename__ = "routes"
 
@@ -95,7 +103,8 @@ class DomainRoute(DomainBase):
     domains = sa.Column(postgresql.ARRAY(sa.Text))
     challenge_json = sa.Column(postgresql.BYTEA)
     user_data_id = sa.Column(sa.Integer)
-    alb_proxy_arn = sa.Column(sa.Text)
+    alb_proxy_arn = sa.Column(sa.Text, sa.ForeignKey(DomainAlbProxy.alb_arn))
+    alb_proxy = orm.relationship(DomainAlbProxy)
     certificates = orm.relationship("DomainCertificate")
 
     def domain_external_list(self):
@@ -132,11 +141,3 @@ class DomainUserData(DomainBase):
     email = sa.Column(sa.Text, nullable=False)
     reg = sa.Column(postgresql.BYTEA)
     key = sa.Column(postgresql.BYTEA)
-
-
-class DomainAlbProxies(DomainBase):
-    __tablename__ = "alb_proxies"
-
-    alb_arn = sa.Column(sa.Integer, primary_key=True)
-    alb_dns_name = sa.Column(sa.Text)
-    listener_arn = sa.Column(sa.Text)
