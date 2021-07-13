@@ -47,9 +47,9 @@ def migration_for_route(route, session, client):
 def migrate_ready_instances(session, client):
     results = dict(migrated=[], skipped=[], failed=[])
     for route in find_active_instances(session):
-        if route.has_valid_dns():
+        migration = migration_for_route(route, session, client)
+        if migration.has_valid_dns():
             try:
-                migration = migration_for_route(route, session, client)
                 migration.migrate()
             except Exception as e:
                 # todo: drop print when we add global handling
