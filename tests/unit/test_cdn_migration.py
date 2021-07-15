@@ -1057,7 +1057,8 @@ def test_migration_migrates_happy_path(
     } """
 
     fake_requests.delete(
-        "http://localhost/v2/service_instances/asdf-asdf?purge=true", text=response_body
+        "http://localhost/v2/service_instances/asdf-asdf?purge=true",
+        text=purge_service_instance_body,
     )
 
     response_body_update_instance_name = """

@@ -1,6 +1,7 @@
 import datetime
 import pytest
 from migrator.extensions import iam_commercial as real_iam_commercial
+from migrator.extensions import iam_govcloud as real_iam_govcloud
 
 from tests.lib.fake_aws import FakeAWS
 
@@ -98,4 +99,10 @@ class FakeIAM(FakeAWS):
 @pytest.fixture
 def iam_commercial():
     with FakeIAM.stubbing(real_iam_commercial) as iam_stubber:
+        yield iam_stubber
+
+
+@pytest.fixture
+def iam_govcloud():
+    with FakeIAM.stubbing(real_iam_govcloud) as iam_stubber:
         yield iam_stubber

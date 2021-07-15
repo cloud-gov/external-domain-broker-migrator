@@ -7,7 +7,7 @@ from tests.lib.database import clean_db
 from tests.lib.dns import dns
 from tests.lib.fake_cf import fake_cf_client
 from tests.lib.fake_cloudfront import cloudfront
-from tests.lib.fake_iam import iam_commercial
+from tests.lib.fake_iam import iam_commercial, iam_govcloud
 from tests.lib.fake_route53 import route53
 from migrator.models import CdnRoute
 from migrator.migration import CdnMigration, Migration
