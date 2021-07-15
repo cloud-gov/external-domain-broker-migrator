@@ -8,10 +8,12 @@ from migrator.extensions import (
     cloudfront,
     config,
     iam_commercial,
+    iam_govcloud,
     route53,
     migration_plan_guid,
     migration_plan_instance_name,
     domain_with_cdn_plan_guid,
+    domain_plan_guid,
 )
 from migrator.models import CdnRoute, DomainRoute
 from migrator.smtp import send_email
@@ -67,7 +69,6 @@ def migrate_ready_instances(session, client):
 class Migration:
     def __init__(self, route, session, client):
         self.instance_id = route.instance_id
-        self.domain_internal = route.domain_internal
         self.route = route
         self.session = session
         self.client = client
@@ -88,20 +89,6 @@ class Migration:
         if not self.domains:
             return False
         return all([has_expected_cname(domain) for domain in self.domains])
-
-    @property
-    def iam_certificate_id(self):
-        return self.cloudfront_distribution_config["ViewerCertificate"][
-            "IAMCertificateId"
-        ]
-
-    @property
-    def iam_certificate_name(self):
-        return self.iam_server_certificate_data["ServerCertificateName"]
-
-    @property
-    def iam_certificate_arn(self):
-        return self.iam_server_certificate_data["Arn"]
 
     @property
     def space_id(self):
@@ -245,15 +232,40 @@ class Migration:
         self.route.state = "migrated"
         self.session.commit()
 
+    def migrate(self):
+        try:
+            self._migrate()
+        except Exception as e:
+            self.send_failed_operation_alert(e)
+            # the goal here is to try to make it easier to find the logs in Kibana
+            # since we can't just email ourselves the stack trace
+            logger.exception("failed migrating %s", repr(self))
+            raise
+
 
 class CdnMigration(Migration):
     def __init__(self, route, session, client):
         self.cloudfront_distribution_id = route.dist_id
         self._cloudfront_distribution_data = None
+        self.domain_internal = route.domain_internal
         self.external_domain_broker_service_instance = None
         self.hosted_zone_id = config.CLOUDFRONT_HOSTED_ZONE_ID
         self.domains = route.domain_external.split(",")
         super().__init__(route, session, client)
+
+    @property
+    def iam_certificate_id(self):
+        return self.cloudfront_distribution_config["ViewerCertificate"][
+            "IAMCertificateId"
+        ]
+
+    @property
+    def iam_certificate_name(self):
+        return self.iam_server_certificate_data["ServerCertificateName"]
+
+    @property
+    def iam_certificate_arn(self):
+        return self.iam_server_certificate_data["Arn"]
 
     @property
     def cloudfront_distribution_data(self):
@@ -387,21 +399,14 @@ class CdnMigration(Migration):
 
         self.check_instance_status()
 
-    def migrate(self):
-        try:
-            self.enable_migration_service_plan()
-            self.create_bare_migrator_instance_in_org_space()
-            self.update_existing_cdn_domain()
-            self.disable_migration_service_plan()
-            self.purge_old_instance()
-            self.update_instance_name()
-            self.mark_complete()
-        except Exception as e:
-            self.send_failed_operation_alert(e)
-            # the goal here is to try to make it easier to find the logs in Kibana
-            # since we can't just email ourselves the stack trace
-            logger.exception("failed migrating %s", repr(self))
-            raise
+    def _migrate(self):
+        self.enable_migration_service_plan()
+        self.create_bare_migrator_instance_in_org_space()
+        self.update_existing_cdn_domain()
+        self.disable_migration_service_plan()
+        self.purge_old_instance()
+        self.update_instance_name()
+        self.mark_complete()
 
     def send_failed_operation_alert(self, exception):
         subject = f"[{config.ENV}] - external-domain-broker-migrator migration failed"
@@ -426,4 +431,59 @@ migration: {repr(self)}
 class DomainMigration(Migration):
     def __init__(self, route, session, client):
         self.domains = route.domains
+        self._iam_server_certificate_data = None
         super().__init__(route, session, client)
+
+    @property
+    def current_certificate(self):
+        return self.route.certificates[0]
+
+    @property
+    def iam_server_certificate_data(self):
+        if self._iam_server_certificate_data is None:
+            data = iam_govcloud.get_server_certificate(
+                ServerCertificateName=self.iam_certificate_name
+            )
+            self._iam_server_certificate_data = data["ServerCertificate"][
+                "ServerCertificateMetadata"
+            ]
+        return self._iam_server_certificate_data
+
+    @property
+    def iam_certificate_id(self):
+        return self.iam_server_certificate_data["ServerCertificateId"]
+
+    @property
+    def iam_certificate_arn(self):
+        return self.current_certificate.arn
+
+    @property
+    def iam_certificate_name(self):
+        return self.current_certificate.name
+
+    def update_migration_instance_to_alb_plan(self):
+        logger.debug("updating bare instance for %s", self.instance_id)
+        params = {
+            "iam_server_certificate_name": self.iam_certificate_name,
+            "iam_server_certificate_id": self.iam_certificate_id,
+            "iam_server_certificate_arn": self.iam_certificate_arn,
+            "domain_internal": self.route.alb_proxy.alb_dns_name,
+        }
+
+        cf.update_existing_cdn_domain_service_instance(
+            self.external_domain_broker_service_instance,
+            params,
+            self.client,
+            new_plan_guid=domain_plan_guid,
+        )
+
+        self.check_instance_status()
+
+    def _migrate(self):
+        self.enable_migration_service_plan()
+        self.create_bare_migrator_instance_in_org_space()
+        self.update_migration_instance_to_alb_plan()
+        self.disable_migration_service_plan()
+        self.purge_old_instance()
+        self.update_instance_name()
+        self.mark_complete()

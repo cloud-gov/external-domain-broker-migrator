@@ -35,6 +35,9 @@ class LocalConfig(Config):
         self.AWS_COMMERCIAL_REGION = "us-west-1"
         self.AWS_COMMERCIAL_ACCESS_KEY_ID = "ASIANOTAREALKEY"
         self.AWS_COMMERCIAL_SECRET_ACCESS_KEY = "THIS_IS_A_FAKE_KEY"
+        self.AWS_GOVCLOUD_REGION = "us-gov-west-1"
+        self.AWS_GOVCLOUD_ACCESS_KEY_ID = "ASIANOTAREALKEYGOV"
+        self.AWS_GOVCLOUD_SECRET_ACCESS_KEY = "THIS_IS_A_FAKE_KEY_GOV"
         self.ROUTE53_ZONE_ID = "FAKEZONEID"
         # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
         self.CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2"
@@ -64,6 +67,11 @@ class AppConfig(Config):
         )
         self.AWS_COMMERCIAL_SECRET_ACCESS_KEY = self.env_parser(
             "AWS_COMMERCIAL_SECRET_ACCESS_KEY"
+        )
+        self.AWS_GOVCLOUD_REGION = self.env_parser("AWS_GOVCLOUD_REGION")
+        self.AWS_GOVCLOUD_ACCESS_KEY_ID = self.env_parser("AWS_GOVCLOUD_ACCESS_KEY_ID")
+        self.AWS_GOVCLOUD_SECRET_ACCESS_KEY = self.env_parser(
+            "AWS_GOVCLOUD_SECRET_ACCESS_KEY"
         )
         self.ROUTE53_ZONE_ID = self.env_parser("ROUTE53_HOSTED_ZONE_ID")
         self.ALB_HOSTED_ZONE_ID = self.env_parser("ALB_HOSTED_ZONE_ID")

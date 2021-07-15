@@ -73,6 +73,9 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("AWS_COMMERCIAL_REGION", "us-west-1")
     monkeypatch.setenv("AWS_COMMERCIAL_ACCESS_KEY_ID", "ASIANOTAREALKEY")
     monkeypatch.setenv("AWS_COMMERCIAL_SECRET_ACCESS_KEY", "NOT_A_REAL_SECRET_KEY")
+    monkeypatch.setenv("AWS_GOVCLOUD_REGION", "us-gov-west-1")
+    monkeypatch.setenv("AWS_GOVCLOUD_ACCESS_KEY_ID", "ASIANOTAREALKEYGOV")
+    monkeypatch.setenv("AWS_GOVCLOUD_SECRET_ACCESS_KEY", "NOT_A_REAL_SECRET_KEY_GOV")
     monkeypatch.setenv("ROUTE53_HOSTED_ZONE_ID", "FAKEZONEID")
     monkeypatch.setenv("ALB_HOSTED_ZONE_ID", "FAKEZONEIDFORALBS")
     monkeypatch.setenv("CF_USERNAME", "fake_cf_username")
@@ -103,6 +106,9 @@ def test_config_gets_credentials(env, monkeypatch, mocked_env):
     assert config.AWS_COMMERCIAL_REGION == "us-west-1"
     assert config.AWS_COMMERCIAL_ACCESS_KEY_ID == "ASIANOTAREALKEY"
     assert config.AWS_COMMERCIAL_SECRET_ACCESS_KEY == "NOT_A_REAL_SECRET_KEY"
+    assert config.AWS_GOVCLOUD_REGION == "us-gov-west-1"
+    assert config.AWS_GOVCLOUD_ACCESS_KEY_ID == "ASIANOTAREALKEYGOV"
+    assert config.AWS_GOVCLOUD_SECRET_ACCESS_KEY == "NOT_A_REAL_SECRET_KEY_GOV"
     assert config.ROUTE53_ZONE_ID == "FAKEZONEID"
     assert config.CF_USERNAME == "fake_cf_username"
     assert config.CF_PASSWORD == "fake_cf_password"

@@ -105,7 +105,9 @@ class DomainRoute(DomainBase):
     user_data_id = sa.Column(sa.Integer)
     alb_proxy_arn = sa.Column(sa.Text, sa.ForeignKey(DomainAlbProxy.alb_arn))
     alb_proxy = orm.relationship(DomainAlbProxy)
-    certificates = orm.relationship("DomainCertificate")
+    certificates = orm.relationship(
+        "DomainCertificate", order_by="desc(DomainCertificate.expires)"
+    )
 
     def domain_external_list(self):
         """to match CdnRoute"""
