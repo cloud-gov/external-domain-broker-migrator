@@ -114,6 +114,7 @@ def test_config_gets_credentials(env, monkeypatch, mocked_env):
     assert config.CF_PASSWORD == "fake_cf_password"
     assert config.CF_API_ENDPOINT == "https://localhost"
     assert config.ALB_HOSTED_ZONE_ID == "FAKEZONEIDFORALBS"
+    assert config.CLOUDFRONT_HOSTED_ZONE_ID == "Z2FDTNDATAQYW2"
 
 
 @pytest.mark.parametrize("env", ["production", "staging", "development"])

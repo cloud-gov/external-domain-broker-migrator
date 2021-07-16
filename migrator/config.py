@@ -19,6 +19,9 @@ class Config:
         self.cf_env_parser = AppEnv()
         self.ENV = self.env_parser("ENV")
         self.SEMAPHORE = "cloud-gov-migration-ready"
+        # this is a well-known constant
+        # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
+        self.CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2"
 
 
 class LocalConfig(Config):
@@ -40,7 +43,6 @@ class LocalConfig(Config):
         self.AWS_GOVCLOUD_SECRET_ACCESS_KEY = "THIS_IS_A_FAKE_KEY_GOV"
         self.ROUTE53_ZONE_ID = "FAKEZONEID"
         # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
-        self.CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2"
         self.ALB_HOSTED_ZONE_ID = "FAKEZONEIDFORALBS"
         self.AWS_POLL_WAIT_TIME_IN_SECONDS = 0.01
         self.AWS_POLL_MAX_ATTEMPTS = 10
