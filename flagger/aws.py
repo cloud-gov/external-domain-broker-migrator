@@ -15,6 +15,7 @@ def create_semaphore(domain, dry_run=False):
                     "ResourceRecordSet": {
                         "Name": resource_name,
                         "Type": "TXT",
+                        "TTL": 60,
                         "ResourceRecords": [{"Value": config.SEMAPHORE}],
                     },
                 }
