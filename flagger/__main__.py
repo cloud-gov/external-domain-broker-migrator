@@ -1,4 +1,7 @@
 import sys
+
+from migrator.db import session_handler
+
 from flagger import queries, aws
 
 
