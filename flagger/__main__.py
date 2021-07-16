@@ -27,7 +27,7 @@ def main():
     for domain_cdn in domain_cdns:
         aws.create_cdn_alias(*domain_cdn, dry_run)
     with session_handler() as session:
-        domain_albs = queries.find_albs(session)
+        domain_albs = queries.find_domain_aliases(session)
     for domain_alb in domain_albs:
         aws.create_alb_alias(*domain_alb, dry_run)
 
