@@ -63,6 +63,7 @@ class FakeRoute53(FakeAWS):
                             "ResourceRecordSet": {
                                 "Name": domain,
                                 "Type": "TXT",
+                                "TTL": 60,
                                 "ResourceRecords": [{"Value": semaphore}],
                             },
                         }
