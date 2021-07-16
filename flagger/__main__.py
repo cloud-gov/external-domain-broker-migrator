@@ -29,7 +29,7 @@ def main():
     with session_handler() as session:
         domain_albs = queries.find_domain_aliases(session)
     for domain_alb in domain_albs:
-        aws.create_alb_alias(*domain_alb, dry_run)
+        aws.create_domain_alias(*domain_alb, dry_run)
 
 
 if __name__ == "__main__":
