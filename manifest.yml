@@ -3,7 +3,7 @@ applications:
 - name: ((APP_NAME))
   memory: 256M
   instances: 1
-  command: python3 -m migrator
+  command: python3 -m migrator --cron
   no-route: true
   health-check-type: process
   services:

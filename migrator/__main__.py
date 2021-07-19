@@ -1,11 +1,13 @@
+import argparse
 import logging
 import time
+import sys
 
 import schedule
 
 from migrator.extensions import config
 from migrator.db import check_connections, session_handler
-from migrator.migration import migrate_ready_instances
+from migrator.migration import migrate_ready_instances, migrate_single_instance
 from migrator.cf import get_cf_client
 from migrator.smtp import send_report_email
 
@@ -16,15 +18,34 @@ def run_and_report():
     send_report_email(results)
 
 
+def parse_args(args):
+    parser = argparse.ArgumentParser()
+    action_group = parser.add_mutually_exclusive_group(required=True)
+    action_group.add_argument(
+        "--cron",
+        action="store_true",
+        help="Run daemon, migrating all ready instances on a scheduled",
+    )
+    action_group.add_argument(
+        "--instance", help="run once against the specified instance"
+    )
+    return parser.parse_args(args)
+
+
 def main():
     logging.basicConfig(level=logging.DEBUG)
+    args = parse_args(sys.argv[1:])
     check_connections()
-    schedule.every().tuesday.at(config.MIGRATION_TIME).do(run_and_report)
-    schedule.every().wednesday.at(config.MIGRATION_TIME).do(run_and_report)
-    schedule.every().thursday.at(config.MIGRATION_TIME).do(run_and_report)
-    while True:
-        time.sleep(1)
-        schedule.run_pending()
+    if args.cron:
+        schedule.every().tuesday.at(config.MIGRATION_TIME).do(run_and_report)
+        schedule.every().wednesday.at(config.MIGRATION_TIME).do(run_and_report)
+        schedule.every().thursday.at(config.MIGRATION_TIME).do(run_and_report)
+        while True:
+            time.sleep(1)
+            schedule.run_pending()
+    elif args.instance:
+        with session_handler() as session:
+            migrate_single_instance(args.instance, session, get_cf_client(config))
 
 
 if __name__ == "__main__":

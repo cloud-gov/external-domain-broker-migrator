@@ -46,6 +46,13 @@ def migration_for_route(route, session, client):
     return DomainMigration(route, session, client)
 
 
+def migration_for_instance_id(instance_id, session, client):
+    instances = find_active_instances(session)
+    filtered = filter(lambda x: x.instance_id == instance_id, instances)
+    instance = list(filtered)[0]
+    return migration_for_route(instance, session, client)
+
+
 def migrate_ready_instances(session, client):
     results = dict(migrated=[], skipped=[], failed=[])
     for route in find_active_instances(session):
@@ -64,6 +71,20 @@ def migrate_ready_instances(session, client):
         else:
             results["skipped"].append(route.instance_id)
     return results
+
+
+def migrate_single_instance(instance_id, session, client):
+    migration = migration_for_instance_id(instance_id, session, client)
+    if migration.has_valid_dns():
+        try:
+            migration.migrate()
+        except Exception as e:
+            # todo: drop print when we add global handling
+            print(e)
+            route.state = "migration_failed"
+            session.commit()
+        else:
+            logger.info("migrated instance %s successfully!", instance_id)
 
 
 class Migration:
