@@ -2,7 +2,13 @@ import datetime
 
 import pytest
 
-from migrator.migration import find_active_instances, Migration
+from migrator.migration import (
+    migration_for_instance_id,
+    find_active_instances,
+    Migration,
+    DomainMigration,
+    CdnMigration,
+)
 from migrator.models import CdnRoute, DomainRoute
 
 
@@ -28,6 +34,54 @@ def test_find_instances(clean_db):
     assert len(instances) == 2
     assert instances[0].state == "provisioned"
     assert instances[1].state == "provisioned"
+
+
+def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests):
+    # these stubs are just so we don't blow up later
+    dont_care_instance_response_body = """ {
+        "entity": {
+          "space_guid": "my-space-guid",
+          "name": "my-instance-name"
+        }
+    } """
+    fake_requests.get(
+        "http://localhost/v2/service_instances/alb-1234",
+        text=dont_care_instance_response_body,
+    )
+    fake_requests.get(
+        "http://localhost/v2/service_instances/alb-5678",
+        text=dont_care_instance_response_body,
+    )
+    fake_requests.get(
+        "http://localhost/v2/service_instances/cdn-1234",
+        text=dont_care_instance_response_body,
+    )
+    fake_requests.get(
+        "http://localhost/v2/service_instances/cdn-5678",
+        text=dont_care_instance_response_body,
+    )
+    # end stubs
+
+    domain_route0 = DomainRoute()
+    domain_route0.state = "provisioned"
+    domain_route0.instance_id = "alb-1234"
+    domain_route1 = DomainRoute()
+    domain_route1.state = "provisioned"
+    domain_route1.instance_id = "alb-5678"
+    cdn_route0 = CdnRoute()
+    cdn_route0.state = "provisioned"
+    cdn_route0.instance_id = "cdn-1234"
+    cdn_route1 = CdnRoute()
+    cdn_route1.state = "provisioned"
+    cdn_route1.instance_id = "cdn-5678"
+    clean_db.add(domain_route0)
+    clean_db.add(domain_route1)
+    clean_db.add(cdn_route0)
+    clean_db.add(cdn_route1)
+    clean_db.commit()
+    migration = migration_for_instance_id("alb-5678", clean_db, fake_cf_client)
+    assert isinstance(migration, DomainMigration)
+    assert migration.route.instance_id == "alb-5678"
 
 
 def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
