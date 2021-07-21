@@ -1,6 +1,8 @@
 import logging
 import time
 
+from cloudfoundry_client.errors import InvalidStatusCode
+
 from migrator import cf
 from migrator.db import session_handler
 from migrator.dns import has_expected_cname
@@ -53,10 +55,22 @@ def migration_for_instance_id(instance_id, session, client):
     return migration_for_route(instance, session, client)
 
 
+def find_migrations(session, client):
+    migrations = []
+    for route in find_active_instances(session):
+        try:
+            migration = migration_for_route(route, session, client)
+            migrations.append(migration)
+        except InvalidStatusCode as e:
+            logger.exception("error getting migration", exc_info=e)
+            route.state = "migration_failed"
+            session.commit()
+    return migrations
+
+
 def migrate_ready_instances(session, client):
     results = dict(migrated=[], skipped=[], failed=[])
-    for route in find_active_instances(session):
-        migration = migration_for_route(route, session, client)
+    for migration in find_migrations(session, client):
         if migration.has_valid_dns():
             try:
                 migration.migrate()
@@ -65,11 +79,11 @@ def migrate_ready_instances(session, client):
                 print(e)
                 route.state = "migration_failed"
                 session.commit()
-                results["failed"].append(route.instance_id)
+                results["failed"].append(migration.route.instance_id)
             else:
-                results["migrated"].append(route.instance_id)
+                results["migrated"].append(migration.route.instance_id)
         else:
-            results["skipped"].append(route.instance_id)
+            results["skipped"].append(migration.route.instance_id)
     return results
 
 
