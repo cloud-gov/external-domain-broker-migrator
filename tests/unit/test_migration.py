@@ -3,6 +3,7 @@ import datetime
 import pytest
 
 from migrator.migration import (
+    find_migrations,
     migration_for_instance_id,
     find_active_instances,
     Migration,
@@ -34,6 +35,75 @@ def test_find_instances(clean_db):
     assert len(instances) == 2
     assert instances[0].state == "provisioned"
     assert instances[1].state == "provisioned"
+
+
+def test_get_migrations(clean_db, fake_cf_client, fake_requests):
+    # instances that should work
+    dont_care_instance_response_body = """ {
+        "entity": {
+          "space_guid": "my-space-guid",
+          "name": "my-instance-name"
+        }
+    } """
+
+    # instance that should not work
+    not_found_response = """
+    {
+        "description": "The service instance could not be found: nope",
+        "error_code": "CF-ServiceInstanceNotFound",
+        "code": 60004
+    }"""
+    fake_requests.get(
+        "http://localhost/v2/service_instances/alb-1234",
+        text=dont_care_instance_response_body,
+    )
+    fake_requests.get(
+        "http://localhost/v2/service_instances/alb-5678",
+        text=dont_care_instance_response_body,
+    )
+    fake_requests.get(
+        "http://localhost/v2/service_instances/cdn-1234",
+        text=dont_care_instance_response_body,
+    )
+    fake_requests.get(
+        "http://localhost/v2/service_instances/cdn-5678",
+        text=dont_care_instance_response_body,
+    )
+
+    # blow up on this one
+    fake_requests.get(
+        "http://localhost/v2/service_instances/bad-404",
+        status_code=404,
+        reason="Not Found",
+        text=not_found_response,
+    )
+
+    domain_route0 = DomainRoute()
+    domain_route0.state = "provisioned"
+    domain_route0.instance_id = "alb-1234"
+    domain_route1 = DomainRoute()
+    domain_route1.state = "provisioned"
+    domain_route1.instance_id = "alb-5678"
+    cdn_route0 = CdnRoute()
+    cdn_route0.state = "provisioned"
+    cdn_route0.instance_id = "cdn-1234"
+    cdn_route0.domain_external = "blah"
+    cdn_route1 = CdnRoute()
+    cdn_route1.state = "provisioned"
+    cdn_route1.instance_id = "cdn-5678"
+    cdn_route1.domain_external = "blah"
+    bad_route0 = CdnRoute()
+    bad_route0.state = "provisioned"
+    bad_route0.instance_id = "bad-404"
+    bad_route0.domain_external = "blah"
+    clean_db.add(domain_route0)
+    clean_db.add(domain_route1)
+    clean_db.add(cdn_route0)
+    clean_db.add(cdn_route1)
+    clean_db.add(bad_route0)
+    clean_db.commit()
+    migrations = find_migrations(clean_db, fake_cf_client)
+    assert len(migrations) == 4
 
 
 def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests):
