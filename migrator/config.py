@@ -52,6 +52,7 @@ class LocalConfig(Config):
         self.SERVICE_CHANGE_RETRY_COUNT = 2
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 0.01
         self.MIGRATION_TIME = "11:00:00"
+        self.MIGRATION_PLAN_ID = "FAKE-MIGRATION-PLAN-GUID"
 
 
 class AppConfig(Config):
@@ -85,6 +86,7 @@ class AppConfig(Config):
         self.SERVICE_CHANGE_RETRY_COUNT = 60
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 10
         self.MIGRATION_TIME = self.env_parser("MIGRATION_TIME", "11:00:00")
+        self.MIGRATION_PLAN_ID = self.env_parser("MIGRATION_PLAN_ID")
 
         self.SMTP_HOST = self.env_parser("SMTP_HOST")
         self.SMTP_FROM = self.env_parser("SMTP_FROM")

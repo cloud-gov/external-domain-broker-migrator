@@ -142,11 +142,11 @@ class Migration:
     @property
     def service_plan_visibility_ids(self):
         return cf.get_service_plan_visibility_ids_for_org(
-            migration_plan_guid, self.org_id, self.client
+            config.MIGRATION_PLAN_ID, self.org_id, self.client
         )
 
     def enable_migration_service_plan(self):
-        cf.enable_plan_for_org(migration_plan_guid, self.org_id, self.client)
+        cf.enable_plan_for_org(config.MIGRATION_PLAN_ID, self.org_id, self.client)
 
     def disable_migration_service_plan(self):
         for service_plan_visibility_id in self.service_plan_visibility_ids:

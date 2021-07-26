@@ -291,7 +291,7 @@ def test_migration_enables_plan_in_org(
 ):
     def service_plan_visibility_matcher(request):
         params = request.json()
-        plan = "739e78F5-a919-46ef-9193-1293cc086c17"
+        plan = "FAKE-MIGRATION-PLAN-GUID"
         return (
             params["organization_guid"] == "my-org-guid"
             and params["service_plan_guid"] == plan
@@ -352,7 +352,7 @@ def test_migration_disables_plan_in_org(
          "entity": {
             "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
             "organization_guid": "my-org-guid",
-            "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+            "service_plan_url": "/v2/service_plans/FAKE-MIGRATION-PLAN-GUID",
             "organization_url": "/v2/organizations/my-org-guid"
          }
       }
@@ -360,7 +360,7 @@ def test_migration_disables_plan_in_org(
 }
     """
     fake_requests.get(
-        "http://localhost/v2/service_plan_visibilities?q=organization_guid:my-org-guid&q=service_plan_guid:739e78F5-a919-46ef-9193-1293cc086c17",
+        "http://localhost/v2/service_plan_visibilities?q=organization_guid:my-org-guid&q=service_plan_guid:FAKE-MIGRATION-PLAN-GUID",
         text=response_body_get,
     )
 

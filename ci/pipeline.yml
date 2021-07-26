@@ -84,6 +84,7 @@ jobs:
         SMTP_PASS: ((dev-smtp-pass))
         SMTP_PORT: ((dev-smtp-port))
         SMTP_TO: ((dev-smtp-to))
+        MIGRATION_PLAN_ID: ((dev-migration-plan-id))
 
   on_failure:
     put: slack
@@ -141,6 +142,7 @@ jobs:
         SMTP_PASS: ((staging-smtp-pass))
         SMTP_PORT: ((staging-smtp-port))
         SMTP_TO: ((staging-smtp-to))
+        MIGRATION_PLAN_ID: ((staging-migration-plan-id))
 
   on_failure:
     put: slack
