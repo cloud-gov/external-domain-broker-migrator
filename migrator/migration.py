@@ -95,7 +95,7 @@ def migrate_single_instance(instance_id, session, client):
         except Exception as e:
             # todo: drop print when we add global handling
             print(e)
-            route.state = "migration_failed"
+            migration.route.state = "migration_failed"
             session.commit()
         else:
             logger.info("migrated instance %s successfully!", instance_id)
@@ -277,6 +277,15 @@ class Migration:
             logger.exception("failed migrating %s", repr(self))
             raise
 
+    def send_failed_operation_alert(self, exception):
+        subject = f"[{config.ENV}] - external-domain-broker-migrator migration failed"
+        body = f"""
+<h1>Migration failed unexpectedly!</h1>
+
+migration: {repr(self)}
+        """
+        send_email(config.SMTP_TO, subject, body)
+
 
 class CdnMigration(Migration):
     def __init__(self, route, session, client):
@@ -442,15 +451,6 @@ class CdnMigration(Migration):
         self.purge_old_instance()
         self.update_instance_name()
         self.mark_complete()
-
-    def send_failed_operation_alert(self, exception):
-        subject = f"[{config.ENV}] - external-domain-broker-migrator migration failed"
-        body = f"""
-<h1>Migration failed unexpectedly!</h1>
-
-migration: {repr(self)}
-        """
-        send_email(config.SMTP_TO, subject, body)
 
     def __repr__(self):
         return f"<instance_name={self.instance_name}, route={self.route.instance_id}, domains={self.route.domain_external}, domain_instance={self.external_domain_broker_service_instance}, space_id={self._space_id}, org_id={self._org_id}>"
