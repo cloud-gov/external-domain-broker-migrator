@@ -23,7 +23,6 @@ govcloud_session = boto3.Session(
 )
 iam_govcloud = govcloud_session.client("iam")
 
-migration_plan_guid = "739e78F5-a919-46ef-9193-1293cc086c17"
 migration_plan_instance_name = "external-domain-broker-migrator"
 
 domain_with_cdn_plan_guid = "1cc78b0c-c296-48f5-9182-0b38404f79ef"

@@ -12,7 +12,6 @@ from migrator.extensions import (
     iam_commercial,
     iam_govcloud,
     route53,
-    migration_plan_guid,
     migration_plan_instance_name,
     domain_with_cdn_plan_guid,
     domain_plan_guid,
@@ -156,7 +155,7 @@ class Migration:
         logger.debug("creating bare instance for %s", self.instance_id)
         instance_info = cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
-            migration_plan_guid,
+            config.MIGRATION_PLAN_ID,
             migration_plan_instance_name,
             self.client,
         )
@@ -522,3 +521,6 @@ class DomainMigration(Migration):
         self.purge_old_instance()
         self.update_instance_name()
         self.mark_complete()
+
+    def __repr__(self):
+        return f"<instance_name={self.instance_name}, route={self.route.instance_id}, domains={self.route.domains}, domain_instance={self.external_domain_broker_service_instance}, space_id={self._space_id}, org_id={self._org_id}>"
