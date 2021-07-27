@@ -491,7 +491,8 @@ def test_domain_migration_migrates(
 
     # create service instance
     assert (
-        fake_requests.request_history[1].url == "http://localhost/v2/service_instances"
+        fake_requests.request_history[1].url
+        == "http://localhost/v2/service_instances?accepts_incomplete=true"
     )
     assert fake_requests.request_history[1].method == "POST"
 
@@ -505,7 +506,7 @@ def test_domain_migration_migrates(
     # update service instance
     assert (
         fake_requests.request_history[3].url
-        == "http://localhost/v2/service_instances/my-migrator-instance"
+        == "http://localhost/v2/service_instances/my-migrator-instance?accepts_incomplete=true"
     )
     assert fake_requests.request_history[3].method == "PUT"
     # wait for instance
@@ -540,7 +541,7 @@ def test_domain_migration_migrates(
     assert fake_requests.request_history[8].method == "PUT"
     assert (
         fake_requests.request_history[8].url
-        == "http://localhost/v2/service_instances/my-migrator-instance"
+        == "http://localhost/v2/service_instances/my-migrator-instance?accepts_incomplete=true"
     )
 
     # check rename status

@@ -330,7 +330,10 @@ def test_create_bare_migrator_service_instance_in_space(fake_cf_client, fake_req
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert last_request.url == "http://localhost/v2/service_instances"
+    assert (
+        last_request.url
+        == "http://localhost/v2/service_instances?accepts_incomplete=true"
+    )
 
     assert response["guid"] == "my-migrator-instance"
     assert response["state"] == "in progress"
