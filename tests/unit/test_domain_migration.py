@@ -142,9 +142,9 @@ def test_domain_migration_migrates(
     migration._org_id = "my-org-id"
     migration._iam_server_certificate_data = {
         "Path": "/",
-        "ServerCertificateName": "my-server-cert",
-        "ServerCertificateId": "my-server-cert-id",
-        "Arn": "aws:arn:iam:my-server-cert",
+        "ServerCertificateName": "my-cert-name",
+        "ServerCertificateId": "my-cert-id",
+        "Arn": "aws:arn:iam:my-cert-name",
         "UploadDate": datetime.date(2021, 1, 1),
         "Expiration": datetime.date(2022, 1, 1),
     }
@@ -290,9 +290,29 @@ def test_domain_migration_migrates(
         }
     }"""
 
+    def update_instance_matcher(request):
+        body = request.json()
+        name = body.get("name")
+        service_plan_guid = body.get("service_plan_guid")
+        params = body.get("parameters", {})
+        if name is None:
+            # the service plan update
+            assert params.get("iam_server_certificate_name") == "my-cert-name"
+            assert params.get("iam_server_certificate_id") == "my-cert-id"
+            assert params.get("iam_server_certificate_arn") == "my-cert-arn"
+            assert params.get("domain_internal") == "foo.example.com"
+            assert params.get("alb_arn") == "arn:123"
+            assert params.get("alb_listener_arn") == "arn:234"
+            assert params.get("hosted_zone_id") == "FAKEZONEIDFORALBS"
+            return service_plan_guid == "FAKE-DOMAIN-PLAN-GUID"
+        else:
+            # the name update
+            return params == {}
+
     fake_requests.put(
-        "http://localhost/v2/service_instances/my-migrator-instance",
+        "http://localhost/v2/service_instances/my-migrator-instance?accepts_incomplete=true",
         text=update_service_instance_response_body,
+        additional_matcher=update_instance_matcher,
     )
     service_instance_update_check_response_body = """
     {
@@ -472,15 +492,6 @@ def test_domain_migration_migrates(
         }
     }
     """
-
-    def name_matcher(request):
-        return request.json().get("name") == "my-old-alb"
-
-    fake_requests.put(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_update_instance_name,
-        additional_matcher=name_matcher,
-    )
 
     fake_requests.get(
         "http://localhost/v2/service_instances/my-migrator-instance",

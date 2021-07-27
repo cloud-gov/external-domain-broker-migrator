@@ -85,6 +85,8 @@ jobs:
         SMTP_PORT: ((dev-smtp-port))
         SMTP_TO: ((dev-smtp-to))
         MIGRATION_PLAN_ID: ((dev-migration-plan-id))
+        CDN_PLAN_ID: ((dev-cdn-plan-id))
+        DOMAIN_PLAN_ID: ((dev-domain-plan-id))
 
   on_failure:
     put: slack
@@ -143,6 +145,8 @@ jobs:
         SMTP_PORT: ((staging-smtp-port))
         SMTP_TO: ((staging-smtp-to))
         MIGRATION_PLAN_ID: ((staging-migration-plan-id))
+        CDN_PLAN_ID: ((staging-cdn-plan-id))
+        DOMAIN_PLAN_ID: ((staging-domain-plan-id))
 
   on_failure:
     put: slack

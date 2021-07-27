@@ -89,6 +89,8 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("SMTP_TO", "alerts@example.com")
     monkeypatch.setenv("SMTP_CERT", "A_REAL_CERT_WOULD_BE_LONGER_THAN_THIS")
     monkeypatch.setenv("MIGRATION_PLAN_ID", "A_MIGRATION_PLAN_ID")
+    monkeypatch.setenv("CDN_PLAN_ID", "A_CDN_PLAN_ID")
+    monkeypatch.setenv("DOMAIN_PLAN_ID", "A_DOMAIN_PLAN_ID")
 
 
 @pytest.mark.parametrize("env", ["local", "development", "staging", "production"])
@@ -117,6 +119,8 @@ def test_config_gets_credentials(env, monkeypatch, mocked_env):
     assert config.ALB_HOSTED_ZONE_ID == "FAKEZONEIDFORALBS"
     assert config.CLOUDFRONT_HOSTED_ZONE_ID == "Z2FDTNDATAQYW2"
     assert config.MIGRATION_PLAN_ID == "A_MIGRATION_PLAN_ID"
+    assert config.CDN_PLAN_ID == "A_CDN_PLAN_ID"
+    assert config.DOMAIN_PLAN_ID == "A_DOMAIN_PLAN_ID"
 
 
 @pytest.mark.parametrize("env", ["production", "staging", "development"])

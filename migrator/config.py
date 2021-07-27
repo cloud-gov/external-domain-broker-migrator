@@ -53,6 +53,8 @@ class LocalConfig(Config):
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 0.01
         self.MIGRATION_TIME = "11:00:00"
         self.MIGRATION_PLAN_ID = "FAKE-MIGRATION-PLAN-GUID"
+        self.CDN_PLAN_ID = "FAKE-CDN-PLAN-GUID"
+        self.DOMAIN_PLAN_ID = "FAKE-DOMAIN-PLAN-GUID"
 
 
 class AppConfig(Config):
@@ -87,6 +89,8 @@ class AppConfig(Config):
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 10
         self.MIGRATION_TIME = self.env_parser("MIGRATION_TIME", "11:00:00")
         self.MIGRATION_PLAN_ID = self.env_parser("MIGRATION_PLAN_ID")
+        self.CDN_PLAN_ID = self.env_parser("CDN_PLAN_ID")
+        self.DOMAIN_PLAN_ID = self.env_parser("DOMAIN_PLAN_ID")
 
         self.SMTP_HOST = self.env_parser("SMTP_HOST")
         self.SMTP_FROM = self.env_parser("SMTP_FROM")
