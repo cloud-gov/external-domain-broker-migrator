@@ -109,6 +109,7 @@ class Migration:
         self._space_id = None
         self._org_id = None
         self._iam_server_certificate_data = None
+        self.external_domain_broker_service_instance = None
 
         # get this early so we're sure we have it before we purge the instance
         self.instance_name = self.get_instance_name()
