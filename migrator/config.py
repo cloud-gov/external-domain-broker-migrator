@@ -85,7 +85,8 @@ class AppConfig(Config):
         self.CF_API_ENDPOINT = self.env_parser("CF_API_ENDPOINT")
         self.AWS_POLL_WAIT_TIME_IN_SECONDS = 60
         self.AWS_POLL_MAX_ATTEMPTS = 10
-        self.SERVICE_CHANGE_RETRY_COUNT = 60
+        # just a little bit longer than the broker will try for
+        self.SERVICE_CHANGE_RETRY_COUNT = 1440
         self.SERVICE_CHANGE_POLL_TIME_SECONDS = 10
         self.MIGRATION_TIME = self.env_parser("MIGRATION_TIME", "11:00:00")
         self.MIGRATION_PLAN_ID = self.env_parser("MIGRATION_PLAN_ID")
