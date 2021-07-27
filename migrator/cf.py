@@ -62,7 +62,7 @@ def get_all_space_ids_for_org(org_id, client):
 
 
 def create_bare_migrator_service_instance_in_space(
-    space_id, plan_id, instance_name, client
+    space_id, plan_id, instance_name, domains, client
 ):
     logger.debug("creating service instance for space %s", space_id)
     response = client.v2.service_instances.create(
@@ -70,6 +70,7 @@ def create_bare_migrator_service_instance_in_space(
         instance_name=instance_name,
         plan_guid=plan_id,
         accepts_incomplete=True,
+        parameters=dict(domains=domains),
     )
     return {
         "guid": response["metadata"]["guid"],

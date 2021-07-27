@@ -158,6 +158,7 @@ class Migration:
             self.space_id,
             config.MIGRATION_PLAN_ID,
             migration_plan_instance_name,
+            self.domains,
             self.client,
         )
 

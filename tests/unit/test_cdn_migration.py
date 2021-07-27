@@ -866,9 +866,15 @@ def test_migration_migrates_happy_path(
   }
 }"""
 
+    def create_param_matcher(request):
+        domains_in = request.json().get("parameters", {}).get("domains", [])
+        assert sorted(domains_in) == sorted(["example.com", "foo.com"])
+        return True
+
     fake_requests.post(
         "http://localhost/v2/service_instances?accepts_incomplete=true",
         text=create_service_instance_response_body,
+        additional_matcher=create_param_matcher,
     )
 
     service_instance_create_check_response_body = """

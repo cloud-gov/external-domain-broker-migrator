@@ -203,9 +203,16 @@ def test_domain_migration_migrates(
         }
     }
     """
+
+    def create_param_matcher(request):
+        domains_in = request.json().get("parameters", {}).get("domains", [])
+        assert sorted(domains_in) == sorted(["www0.example.gov", "www1.example.gov"])
+        return True
+
     fake_requests.post(
         "http://localhost/v2/service_instances",
         text=create_service_instance_response_body,
+        additional_matcher=create_param_matcher,
     )
 
     service_instance_update_check_response_body = """

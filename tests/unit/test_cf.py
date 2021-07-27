@@ -319,12 +319,22 @@ def test_create_bare_migrator_service_instance_in_space(fake_cf_client, fake_req
 }
     """
 
-    fake_requests.post("http://localhost/v2/service_instances", text=response_body)
+    def create_param_matcher(request):
+        domains_in = request.json().get("parameters", {}).get("domains", [])
+        assert sorted(domains_in) == sorted(["www0.example.gov", "www1.example.gov"])
+        return True
+
+    fake_requests.post(
+        "http://localhost/v2/service_instances",
+        text=response_body,
+        additional_matcher=create_param_matcher,
+    )
 
     response = cf.create_bare_migrator_service_instance_in_space(
         "my-space-guid",
         "739e78F5-a919-46ef-9193-1293cc086c17",
         "external-domain-broker-migrator",
+        ["www0.example.gov", "www1.example.gov"],
         fake_cf_client,
     )
 
