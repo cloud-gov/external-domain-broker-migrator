@@ -181,7 +181,7 @@ def test_update_existing_cdn_domain(
         service_plan_guid = body.get("service_plan_guid")
         params = body.get("parameters", {})
         assert name is None
-        assert service_plan_guid == "1cc78b0c-c296-48f5-9182-0b38404f79ef"
+        assert service_plan_guid == "FAKE-CDN-PLAN-GUID"
         assert params["origin"] == "example.gov"
         assert params["path"] == "/example-gov"
         assert params["forwarded_cookies"] == ["white-listed-name"]

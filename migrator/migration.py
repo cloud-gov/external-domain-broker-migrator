@@ -13,8 +13,6 @@ from migrator.extensions import (
     iam_govcloud,
     route53,
     migration_plan_instance_name,
-    domain_with_cdn_plan_guid,
-    domain_plan_guid,
 )
 from migrator.models import CdnRoute, DomainRoute
 from migrator.smtp import send_email
@@ -439,7 +437,7 @@ class CdnMigration(Migration):
             self.external_domain_broker_service_instance,
             params,
             self.client,
-            new_plan_guid=domain_with_cdn_plan_guid,
+            new_plan_guid=config.CDN_PLAN_ID,
         )
 
         self.check_instance_status()
@@ -503,14 +501,17 @@ class DomainMigration(Migration):
             "iam_server_certificate_name": self.iam_certificate_name,
             "iam_server_certificate_id": self.iam_certificate_id,
             "iam_server_certificate_arn": self.iam_certificate_arn,
+            "alb_arn": self.route.alb_proxy.alb_arn,
+            "alb_listener_arn": self.route.alb_proxy.listener_arn,
             "domain_internal": self.route.alb_proxy.alb_dns_name,
+            "hosted_zone_id": config.ALB_HOSTED_ZONE_ID,
         }
 
         cf.update_existing_cdn_domain_service_instance(
             self.external_domain_broker_service_instance,
             params,
             self.client,
-            new_plan_guid=domain_plan_guid,
+            new_plan_guid=config.DOMAIN_PLAN_ID,
         )
 
         self.check_instance_status()
