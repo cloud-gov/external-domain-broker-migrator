@@ -1,5 +1,6 @@
 import logging
 from cloudfoundry_client.client import CloudFoundryClient
+from cloudfoundry_client.errors import InvalidStatusCode
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,11 @@ def get_cf_client(config):
 
 def enable_plan_for_org(plan_id, org_id, client):
     logger.debug("enabling plan for %s", org_id)
-    response = client.v2.service_plan_visibilities.create(plan_id, org_id)
-    return response["metadata"]["guid"]
+    try:
+        response = client.v2.service_plan_visibilities.create(plan_id, org_id)
+    except InvalidStatusCode as e:
+        if e.body["error_code"] != "CF-ServicePlanVisibilityAlreadyExists":
+            raise e
 
 
 def get_service_plan_visibility_ids_for_org(plan_id, org_id, client):
