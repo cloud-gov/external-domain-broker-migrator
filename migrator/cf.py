@@ -65,7 +65,9 @@ def create_bare_migrator_service_instance_in_space(
     space_id, plan_id, instance_name, client
 ):
     logger.debug("creating service instance for space %s", space_id)
-    response = client.v2.service_instances.create(space_id, plan_id, instance_name)
+    response = client.v2.service_instances.create(
+        space_guid=space_id, instance_name=instance_name, plan_guid=plan_id
+    )
     return {
         "guid": response["metadata"]["guid"],
         "state": response["entity"]["last_operation"]["state"],
