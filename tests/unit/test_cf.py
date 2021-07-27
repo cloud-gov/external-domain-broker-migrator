@@ -40,6 +40,27 @@ def test_enable_service_plan_2(fake_requests, fake_cf_client):
     assert last_request.url == "http://localhost/v2/service_plan_visibilities"
 
 
+def test_enable_service_plan_2(fake_requests, fake_cf_client):
+    response_body = """{
+        "description": "This combination of ServicePlan and Organization is already taken: organization_id and service_plan_id unique",
+        "error_code": "CF-ServicePlanVisibilityAlreadyExists",
+        "code": 260002
+    }
+    """
+    fake_requests.post(
+        "http://localhost/v2/service_plan_visibilities",
+        text=response_body,
+        status_code=400,
+    )
+
+    # the real test here is that we don't raise an error
+    res = cf.enable_plan_for_org("foo", "bar", fake_cf_client)
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert last_request.url == "http://localhost/v2/service_plan_visibilities"
+
+
 def test_disable_service_plan_2(fake_requests, fake_cf_client):
     response_body = ""
     fake_requests.delete(
