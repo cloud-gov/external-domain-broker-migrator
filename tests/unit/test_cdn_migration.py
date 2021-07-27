@@ -867,7 +867,7 @@ def test_migration_migrates_happy_path(
 }"""
 
     fake_requests.post(
-        "http://localhost/v2/service_instances",
+        "http://localhost/v2/service_instances?accepts_incomplete=true",
         text=create_service_instance_response_body,
     )
 
@@ -1154,7 +1154,8 @@ def test_migration_migrates_happy_path(
     assert fake_requests.request_history[3].method == "POST"
 
     assert (
-        fake_requests.request_history[4].url == "http://localhost/v2/service_instances"
+        fake_requests.request_history[4].url
+        == "http://localhost/v2/service_instances?accepts_incomplete=true"
     )
     assert fake_requests.request_history[4].method == "POST"
     assert (
@@ -1164,7 +1165,7 @@ def test_migration_migrates_happy_path(
     assert fake_requests.request_history[5].method == "GET"
     assert (
         fake_requests.request_history[6].url
-        == "http://localhost/v2/service_instances/my-migrator-instance"
+        == "http://localhost/v2/service_instances/my-migrator-instance?accepts_incomplete=true"
     )
     assert fake_requests.request_history[6].method == "PUT"
     assert (
@@ -1192,7 +1193,7 @@ def test_migration_migrates_happy_path(
     assert fake_requests.request_history[11].method == "PUT"
     assert (
         fake_requests.request_history[11].url
-        == "http://localhost/v2/service_instances/my-migrator-instance"
+        == "http://localhost/v2/service_instances/my-migrator-instance?accepts_incomplete=true"
     )
     assert fake_requests.request_history[12].method == "GET"
     assert (

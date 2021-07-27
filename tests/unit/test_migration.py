@@ -807,7 +807,7 @@ def test_migration_renames_instance(clean_db, fake_cf_client, migration, fake_re
     """
 
     fake_requests.put(
-        "http://localhost/v2/service_instances/migrator-instance-id",
+        "http://localhost/v2/service_instances/migrator-instance-id?accepts_incomplete=true",
         text=response_body_update_instance,
         additional_matcher=name_matcher,
     )
@@ -823,7 +823,7 @@ def test_migration_renames_instance(clean_db, fake_cf_client, migration, fake_re
     assert fake_requests.request_history[-2].method == "PUT"
     assert (
         fake_requests.request_history[-2].url
-        == "http://localhost/v2/service_instances/migrator-instance-id"
+        == "http://localhost/v2/service_instances/migrator-instance-id?accepts_incomplete=true"
     )
     assert fake_requests.request_history[-1].method == "GET"
     assert (
