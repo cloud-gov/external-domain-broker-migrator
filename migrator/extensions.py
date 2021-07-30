@@ -22,5 +22,3 @@ govcloud_session = boto3.Session(
     aws_secret_access_key=config.AWS_GOVCLOUD_SECRET_ACCESS_KEY,
 )
 iam_govcloud = govcloud_session.client("iam")
-
-migration_plan_instance_name = "external-domain-broker-migrator"

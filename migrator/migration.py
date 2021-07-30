@@ -12,7 +12,6 @@ from migrator.extensions import (
     iam_commercial,
     iam_govcloud,
     route53,
-    migration_plan_instance_name,
 )
 from migrator.models import CdnRoute, DomainRoute
 from migrator.smtp import send_email
@@ -155,7 +154,7 @@ class Migration:
         instance_info = cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
             config.MIGRATION_PLAN_ID,
-            migration_plan_instance_name,
+            f"migrating-instance-{self.instance_name}",
             self.domains,
             self.client,
         )
