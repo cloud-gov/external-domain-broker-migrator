@@ -66,7 +66,7 @@ python-dateutil==2.8.1
     # via botocore
 python-dotenv==0.14.0
     # via environs
-pyyaml==5.3.1
+pyyaml==5.4
     # via cloudfoundry-client
 requests==2.24.0
     # via oauth2-client
