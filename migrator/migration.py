@@ -73,8 +73,9 @@ def migrate_ready_instances(session, client):
             except Exception as e:
                 # todo: drop print when we add global handling
                 print(e)
-                route.state = "migration_failed"
-                session.commit()
+                if migration.route:
+                    migration.route.state = "migration_failed"
+                    session.commit()
                 results["failed"].append(migration.route.instance_id)
             else:
                 results["migrated"].append(migration.route.instance_id)
