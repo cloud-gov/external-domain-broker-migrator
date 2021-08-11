@@ -147,7 +147,6 @@ jobs:
         MIGRATION_PLAN_ID: ((staging-migration-plan-id))
         CDN_PLAN_ID: ((staging-cdn-plan-id))
         DOMAIN_PLAN_ID: ((staging-domain-plan-id))
-
   on_failure:
     put: slack
     params:
@@ -162,6 +161,66 @@ jobs:
     params:
       text: |
         :white_check_mark: Successfully deployed external-domain-broker-migrator on staging
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
+
+- name: production
+  plan:
+  - in_parallel:
+    - get: src
+      params: {depth: 1}
+      trigger: true
+      passed: [staging]
+    - get: pipeline-tasks
+  - put: cf-production
+    params:
+      path: src
+      manifest: src/manifest.yml
+      show_app_log: true
+      <<: *cf-manifest-vars
+      environment_variables:
+        ENV: production
+        DNS_ROOT_DOMAIN: ((production-dns-root-domain))
+        DATABASE_ENCRYPTION_KEY: ((production-database-encryption-key))
+        AWS_GOVCLOUD_REGION: ((production-aws-govcloud-region))
+        AWS_GOVCLOUD_ACCESS_KEY_ID: ((production-aws-govcloud-access-key-id))
+        AWS_GOVCLOUD_SECRET_ACCESS_KEY: ((production-aws-govcloud-secret-access-key))
+        AWS_COMMERCIAL_REGION: ((production-aws-commercial-region))
+        AWS_COMMERCIAL_ACCESS_KEY_ID: ((production-aws-commercial-access-key-id))
+        AWS_COMMERCIAL_SECRET_ACCESS_KEY: ((production-aws-commercial-secret-access-key))
+        ROUTE53_HOSTED_ZONE_ID: ((production-route53-hosted-zone-id))
+        ALB_HOSTED_ZONE_ID: ((production-alb-hosted-zone-id))
+        CF_USERNAME: ((production-cf-username))
+        CF_PASSWORD: ((production-cf-password))
+        CF_API_ENDPOINT: ((production-cf-api-endpoint))
+        SMTP_HOST: ((production-smtp-host))
+        SMTP_FROM: ((production-smtp-from))
+        SMTP_CERT: ((production-smtp-cert))
+        SMTP_USER: ((production-smtp-user))
+        SMTP_PASS: ((production-smtp-pass))
+        SMTP_PORT: ((production-smtp-port))
+        SMTP_TO: ((production-smtp-to))
+        MIGRATION_PLAN_ID: ((production-migration-plan-id))
+        CDN_PLAN_ID: ((production-cdn-plan-id))
+        DOMAIN_PLAN_ID: ((production-domain-plan-id))
+
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy external-domain-broker-migrator on production
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed external-domain-broker-migrator on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
       channel: ((slack-channel))
       username: ((slack-username))
@@ -214,6 +273,16 @@ resources:
     api: ((staging-cf-api-endpoint))
     username: ((staging-cf-username))
     password: ((staging-cf-password))
+    organization: ((migrator-organization))
+    space: ((migrator-space))
+
+- name: cf-production
+  type: cf
+  icon: cloud-upload
+  source:
+    api: ((production-cf-api-endpoint))
+    username: ((production-cf-username))
+    password: ((production-cf-password))
     organization: ((migrator-organization))
     space: ((migrator-space))
 
