@@ -1,11 +1,11 @@
 # external-domain-broker-migrator
 
-Migrate [cdn-broker](https://github.com/cloud-gov/cdn-broker) instances to the [external-domain-broker](https://github.com/cloud-gov/external-domain-broker)
+Migrate [cdn-broker](https://github.com/cloud-gov/cdn-broker) and 
+[custom-domain](https://github.com/cloud-gov/cf-domain-broker-alb) instances to the [external-domain-broker](https://github.com/cloud-gov/external-domain-broker)
 
 
 ## Migration Plan
 
-*this is the _plan_ for how we'll do this. Much of this is not yet developed, so may change*
 The external-domain-broker requires customers to set up three ALIAS/CNAME records 
 pointing to predictable DNS names under our control. Two are for the hostname of the actual
 site (e.g. `www.example.gov`), one as an A record, one as an AAAA record. The other is a 
@@ -19,9 +19,6 @@ The migrator works by periodically checking all the active instances in the
 cdn-broker's database. It queries DNS for the _acme-challenge TXT record to
 see if the customer has configured it to point to the intermediate record 
 used by the external-domain broker. 
-Once the DNS is correctly configured, the migrator check if the service instance's 
-certificate expires within 32 days (to try to avoid migrating while a renewal is in
-progress), and if not begins the migration of the instance. 
 1. Enable the external-domain-service migration plan in the service instance's
    space. This plan is a special plan used only for this purpose.
 2. Create an instance of the migration plan in the space.
