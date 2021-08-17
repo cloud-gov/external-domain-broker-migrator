@@ -1,3 +1,5 @@
+import logging
+
 import dns.resolver
 
 from migrator.extensions import config
@@ -8,6 +10,8 @@ _resolver = dns.resolver.Resolver(configure=False)
 _resolver.nameservers = [_nameserver]
 _resolver.port = int(_port)
 
+logger = logging.getLogger(__name__)
+
 
 def get_cname(domain: str) -> str:
     try:
@@ -17,9 +21,15 @@ def get_cname(domain: str) -> str:
         return answers[0].target.to_text(omit_final_dot=True)
 
     except dns.resolver.NXDOMAIN:
+        logger.error("got NXDOMAIN for %s", domain)
         return ""
 
     except dns.resolver.NoAnswer:
+        logger.error("dns resolver got NoAnswer for %s", domain)
+        return ""
+
+    except dns.exception.Timeout:
+        logger.error("dns resolver got Timeout for %s", domain)
         return ""
 
 
@@ -32,9 +42,15 @@ def get_txt(domain: str) -> list:
         return results
 
     except dns.resolver.NXDOMAIN:
+        logger.error("dns resolver got NXDOMAIN for %s", domain)
         return []
 
     except dns.resolver.NoAnswer:
+        logger.error("dns resolver got NoAnswer for %s", domain)
+        return []
+
+    except dns.exception.Timeout:
+        logger.error("dns resolver got Timeout for %s", domain)
         return []
 
 
