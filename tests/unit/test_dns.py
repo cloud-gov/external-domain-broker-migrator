@@ -1,3 +1,7 @@
+from unittest import mock
+
+from dns.exception import Timeout
+
 from migrator.dns import get_cname, get_txt, has_expected_semaphore
 from migrator.extensions import config
 
@@ -31,3 +35,10 @@ def test_dns_finds_semaphore_with_multiple_txt_records(dns):
     dns.add_txt("_acme-challenge.example.com.", config.SEMAPHORE)
     dns.add_txt("_acme-challenge.example.com.", "another txt record")
     assert has_expected_semaphore("example.com")
+
+
+def test_has_expected_cname_returns_false_on_exception(dns):
+    m = mock.MagicMock()
+    m.side_effect = Timeout
+    with mock.patch("migrator.dns._resolver.resolve", new=m):
+        assert not has_expected_semaphore("example.com")
