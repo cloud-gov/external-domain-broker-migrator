@@ -61,9 +61,9 @@ class AppConfig(Config):
     def __init__(self):
         super().__init__()
         cdn_db = self.cf_env_parser.get_service(name="rds-cdn-broker")
-        self.CDN_BROKER_DATABASE_URI = cdn_db.credentials["uri"]
+        self.CDN_BROKER_DATABASE_URI = normalize_db_url(cdn_db.credentials["uri"])
         alb_db = self.cf_env_parser.get_service(name="rds-domain-broker")
-        self.DOMAIN_BROKER_DATABASE_URI = alb_db.credentials["uri"]
+        self.DOMAIN_BROKER_DATABASE_URI = normalize_db_url(alb_db.credentials["uri"])
         self.DNS_VERIFICATION_SERVER = "8.8.8.8:53"
         self.DNS_ROOT_DOMAIN = self.env_parser("DNS_ROOT_DOMAIN")
         self.AWS_COMMERCIAL_REGION = self.env_parser("AWS_COMMERCIAL_REGION")
@@ -116,3 +116,11 @@ class StagingConfig(AppConfig):
 class ProductionConfig(AppConfig):
     def __init__(self):
         super().__init__()
+
+
+def normalize_db_url(url):
+    # sqlalchemy no longer lets us use postgres://
+    # it requires postgresql://
+    if url.split(":")[0] == "postgres":
+        url = url.replace("postgres:", "postgresql:", 1)
+    return url
