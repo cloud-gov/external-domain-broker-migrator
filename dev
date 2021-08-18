@@ -34,6 +34,10 @@ main() {
       build_image
       run "$@"
       ;;
+    upgrade-requirements)
+      build_image
+      upgrade-requirements "$@"
+      ;;
     update-requirements)
       build_image
       update-requirements "$@"
@@ -107,6 +111,10 @@ update-requirements() {
   run "docker/update-requirements-txt"
 }
 
+upgrade-requirements() {
+  run "docker/upgrade-requirements-txt"
+}
+
 usage() {
   [[ $# -gt 0 ]] && echo "ERROR: $*"
   local me=$(basename "$0")
@@ -136,6 +144,10 @@ usage() {
     # Generate the pip-tools/*requirements.txt files from
     # pip-tools/*requirements.in
     $me update-requirements
+
+    # upgrade versions in the *requirements.txt files from
+    # pip-tools/*requirements.in
+    $me upgrade-requirements
 
     # Run command 'foo' in the container
     $me run foo
