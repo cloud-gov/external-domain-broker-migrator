@@ -33,7 +33,7 @@ def vcap_services():
                     "host": "cdn-db-host",
                     "password": "cdn-db-password",
                     "port": "cdn-db-port",
-                    "uri": "cdn-db-uri",
+                    "uri": "postgres://cdn-db-uri",
                     "username": "cdn-db-username",
                 },
                 "instance_name": "rds-cdn-broker",
@@ -50,7 +50,7 @@ def vcap_services():
                     "host": "alb-db-host",
                     "password": "alb-db-password",
                     "port": "alb-db-port",
-                    "uri": "alb-db-uri",
+                    "uri": "postgresql://alb-db-uri",
                     "username": "alb-db-username",
                 },
                 "instance_name": "rds-domain-broker",
@@ -104,8 +104,8 @@ def test_config_doesnt_explode(env, monkeypatch, mocked_env):
 def test_config_gets_credentials(env, monkeypatch, mocked_env):
     monkeypatch.setenv("ENV", env)
     config = config_from_env()
-    assert config.CDN_BROKER_DATABASE_URI == "cdn-db-uri"
-    assert config.DOMAIN_BROKER_DATABASE_URI == "alb-db-uri"
+    assert config.CDN_BROKER_DATABASE_URI == "postgresql://cdn-db-uri"
+    assert config.DOMAIN_BROKER_DATABASE_URI == "postgresql://alb-db-uri"
     assert config.AWS_COMMERCIAL_REGION == "us-west-1"
     assert config.AWS_COMMERCIAL_ACCESS_KEY_ID == "ASIANOTAREALKEY"
     assert config.AWS_COMMERCIAL_SECRET_ACCESS_KEY == "NOT_A_REAL_SECRET_KEY"
