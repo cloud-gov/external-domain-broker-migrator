@@ -14,52 +14,47 @@ logger = logging.getLogger(__name__)
 
 
 def get_cname(domain: str) -> str:
+    result = ""
     try:
         answers = _resolver.resolve(domain, "CNAME")
         print(answers)
 
-        return answers[0].target.to_text(omit_final_dot=True)
+        result = answers[0].target.to_text(omit_final_dot=True)
 
     except dns.resolver.NXDOMAIN:
         logger.error("got NXDOMAIN for %s", domain)
-        return ""
 
     except dns.resolver.NoAnswer:
         logger.error("dns resolver got NoAnswer for %s", domain)
-        return ""
 
     except dns.exception.Timeout:
         logger.error("dns resolver got Timeout for %s", domain)
-        return ""
 
     except BaseException as e:
         logger.exception("dns resolver failed for %s", domain, exc_info=e)
-        return ""
+    return result
 
 
 def get_txt(domain: str) -> list:
+    results = []
     try:
         answers = _resolver.resolve(domain, "TXT")
-        results = []
         for answer in answers:
             results.append(answer.to_text().strip('"'))
-        return results
 
     except dns.resolver.NXDOMAIN:
         logger.error("dns resolver got NXDOMAIN for %s", domain)
-        return []
 
     except dns.resolver.NoAnswer:
         logger.error("dns resolver got NoAnswer for %s", domain)
-        return []
 
     except dns.exception.Timeout:
         logger.error("dns resolver got Timeout for %s", domain)
-        return []
 
     except BaseException as e:
         logger.exception("dns resolver failed for %s", domain, exc_info=e)
-        return ""
+
+    return results
 
 
 def site_cname_target(domain: str) -> str:
