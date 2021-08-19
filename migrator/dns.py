@@ -32,6 +32,10 @@ def get_cname(domain: str) -> str:
         logger.error("dns resolver got Timeout for %s", domain)
         return ""
 
+    except BaseException as e:
+        logger.exception("dns resolver failed for %s", domain, exc_info=e)
+        return ""
+
 
 def get_txt(domain: str) -> list:
     try:
@@ -52,6 +56,10 @@ def get_txt(domain: str) -> list:
     except dns.exception.Timeout:
         logger.error("dns resolver got Timeout for %s", domain)
         return []
+
+    except BaseException as e:
+        logger.exception("dns resolver failed for %s", domain, exc_info=e)
+        return ""
 
 
 def site_cname_target(domain: str) -> str:
