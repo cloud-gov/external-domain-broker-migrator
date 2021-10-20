@@ -670,63 +670,6 @@ def test_create_bare_migrator_instance_in_org_space_timeout_failure(
     assert len(fake_requests.request_history) == 4
 
 
-def test_find_iam_server_certificate_data_finding_result(
-    clean_db, iam_commercial, fake_cf_client, migration
-):
-    """ tests finding a result in multiple pages
-    should also be an effective test of finding the result in one page"""
-    migration._cloudfront_distribution_data = {
-        "DistributionConfig": {
-            "ViewerCertificate": {"IAMCertificateId": "my-server-certificate-id"}
-        }
-    }
-
-    # one page of results without the right one
-    iam_commercial.expect_list_server_certificates(
-        "not-my-server-certificate-name",
-        "not-my-server-certificate-id",
-        "/cloudfront/",
-        is_truncated=True,
-    )
-    # one page of results with the right certificate
-    iam_commercial.expect_list_server_certificates(
-        "my-server-certificate-name",
-        "my-server-certificate-id",
-        "/cloudfront/",
-        marker_in="1",
-        is_truncated=False,
-    )
-    assert migration.iam_certificate_name == "my-server-certificate-name"
-
-
-def test_find_iam_server_certificate_data_without_finding_result(
-    clean_db, iam_commercial, fake_cf_client, migration
-):
-    """ tests paging without finding results """
-    migration._cloudfront_distribution_data = {
-        "DistributionConfig": {
-            "ViewerCertificate": {"IAMCertificateId": "my-server-certificate-id"}
-        }
-    }
-
-    # one page of results without the right one
-    iam_commercial.expect_list_server_certificates(
-        "not-my-server-certificate-name",
-        "not-my-server-certificate-id",
-        "/cloudfront/",
-        is_truncated=True,
-    )
-    # second page of results without the right one
-    iam_commercial.expect_list_server_certificates(
-        "not-my-server-certificate-name",
-        "not-my-server-certificate-id",
-        "/cloudfront/",
-        marker_in="1",
-        is_truncated=False,
-    )
-    assert migration.iam_server_certificate_data is None
-
-
 def test_migration_renames_instance(clean_db, fake_cf_client, migration, fake_requests):
     # the migration fixture gives us the name "my-old-cdn"
     def name_matcher(request):

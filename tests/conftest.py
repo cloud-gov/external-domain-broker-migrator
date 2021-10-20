@@ -1,3 +1,4 @@
+import datetime
 import re
 
 import pytest
@@ -7,9 +8,8 @@ from tests.lib.database import clean_db
 from tests.lib.dns import dns
 from tests.lib.fake_cf import fake_cf_client
 from tests.lib.fake_cloudfront import cloudfront
-from tests.lib.fake_iam import iam_commercial, iam_govcloud
 from tests.lib.fake_route53 import route53
-from migrator.models import CdnRoute
+from migrator.models import CdnRoute, CdnCertificate
 from migrator.migration import CdnMigration, Migration
 
 
@@ -58,6 +58,19 @@ def cdn_migration(clean_db, fake_cf_client, fake_requests):
     route.domain_internal = "example.cloudfront.net"
     route.dist_id = "sample-distribution-id"
     route.instance_id = "asdf-asdf"
+    certificate0 = CdnCertificate()
+    certificate0.route = route
+    certificate0.iam_server_certificate_name = "my-cert-name-0"
+    certificate0.iam_server_certificate_arn = "my-cert-arn-0"
+    certificate0.iam_server_certificate_id = "my-cert-id-0"
+    certificate0.expires = datetime.datetime.now() + datetime.timedelta(days=1)
+
+    certificate1 = CdnCertificate()
+    certificate1.route = route
+    certificate1.iam_server_certificate_name = "my-cert-name-2"
+    certificate1.iam_server_certificate_arn = "my-cert-arn-2"
+    certificate1.iam_server_certificate_id = "my-cert-id-2"
+    certificate1.expires = datetime.datetime.now() - datetime.timedelta(days=1)
     response_body = """
 {
   "metadata": {
@@ -94,6 +107,8 @@ def cdn_migration(clean_db, fake_cf_client, fake_requests):
     fake_requests.get(
         "http://localhost/v2/service_instances/asdf-asdf", text=response_body
     )
+    clean_db.add_all([route, certificate0, certificate1])
+    clean_db.commit()
     migration = CdnMigration(route, clean_db, fake_cf_client)
     return migration
 

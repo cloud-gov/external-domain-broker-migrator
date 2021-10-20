@@ -9,8 +9,6 @@ from migrator.dns import has_expected_cname
 from migrator.extensions import (
     cloudfront,
     config,
-    iam_commercial,
-    iam_govcloud,
     route53,
 )
 from migrator.models import CdnRoute, DomainRoute
@@ -297,18 +295,20 @@ class CdnMigration(Migration):
         super().__init__(route, session, client)
 
     @property
-    def iam_certificate_id(self):
-        return self.cloudfront_distribution_config["ViewerCertificate"][
-            "IAMCertificateId"
-        ]
+    def current_certificate(self):
+        return self.route.certificates[0]
 
     @property
-    def iam_certificate_name(self):
-        return self.iam_server_certificate_data["ServerCertificateName"]
+    def iam_certificate_id(self):
+        return self.current_certificate.iam_server_certificate_id
 
     @property
     def iam_certificate_arn(self):
-        return self.iam_server_certificate_data["Arn"]
+        return self.current_certificate.iam_server_certificate_arn
+
+    @property
+    def iam_certificate_name(self):
+        return self.current_certificate.iam_server_certificate_name
 
     @property
     def cloudfront_distribution_data(self):
@@ -318,39 +318,6 @@ class CdnMigration(Migration):
                 Id=self.cloudfront_distribution_id
             )["Distribution"]
         return self._cloudfront_distribution_data
-
-    @property
-    def iam_server_certificate_data(self):
-        logger.debug("getting iam server certificate data for %s", self.instance_id)
-        if self._iam_server_certificate_data is None:
-            server_certificate_metadata_list = {}
-            is_truncated = True
-
-            while is_truncated:
-                logger.debug(
-                    "getting next page of server certificates %s", self.instance_id
-                )
-                if server_certificate_metadata_list.get("Marker") is not None:
-                    kwargs = {"Marker": server_certificate_metadata_list.get("Marker")}
-                else:
-                    kwargs = {}
-
-                server_certificate_metadata_list = iam_commercial.list_server_certificates(
-                    **kwargs
-                )
-                is_truncated = server_certificate_metadata_list["IsTruncated"]
-
-                for server_certificate in server_certificate_metadata_list[
-                    "ServerCertificateMetadataList"
-                ]:
-                    if (
-                        server_certificate["ServerCertificateId"]
-                        == self.iam_certificate_id
-                    ):
-                        self._iam_server_certificate_data = server_certificate
-                        return self._iam_server_certificate_data
-
-        return self._iam_server_certificate_data
 
     @property
     def cloudfront_distribution_config(self):
@@ -465,7 +432,6 @@ class CdnMigration(Migration):
 class DomainMigration(Migration):
     def __init__(self, route, session, client):
         self.domains = route.domains
-        self._iam_server_certificate_data = None
         super().__init__(route, session, client)
 
     @property
@@ -473,27 +439,16 @@ class DomainMigration(Migration):
         return self.route.certificates[0]
 
     @property
-    def iam_server_certificate_data(self):
-        if self._iam_server_certificate_data is None:
-            data = iam_govcloud.get_server_certificate(
-                ServerCertificateName=self.iam_certificate_name
-            )
-            self._iam_server_certificate_data = data["ServerCertificate"][
-                "ServerCertificateMetadata"
-            ]
-        return self._iam_server_certificate_data
-
-    @property
     def iam_certificate_id(self):
-        return self.iam_server_certificate_data["ServerCertificateId"]
+        return self.current_certificate.iam_server_certificate_id
 
     @property
     def iam_certificate_arn(self):
-        return self.current_certificate.arn
+        return self.current_certificate.iam_server_certificate_arn
 
     @property
     def iam_certificate_name(self):
-        return self.current_certificate.name
+        return self.current_certificate.iam_server_certificate_name
 
     def update_migration_instance_to_alb_plan(self):
         logger.debug("updating bare instance for %s", self.instance_id)
