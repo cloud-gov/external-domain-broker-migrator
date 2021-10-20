@@ -62,8 +62,14 @@ class AppConfig(Config):
         super().__init__()
         cdn_db = self.cf_env_parser.get_service(name="rds-cdn-broker")
         self.CDN_BROKER_DATABASE_URI = normalize_db_url(cdn_db.credentials["uri"])
+        self.CDN_DATABASE_ENCRYPTION_KEY = self.env_parser(
+            "CDN_DATABASE_ENCRYPTION_KEY"
+        )
         alb_db = self.cf_env_parser.get_service(name="rds-domain-broker")
         self.DOMAIN_BROKER_DATABASE_URI = normalize_db_url(alb_db.credentials["uri"])
+        self.DOMAIN_DATABASE_ENCRYPTION_KEY = self.env_parser(
+            "DOMAIN_DATABASE_ENCRYPTION_KEY"
+        )
         self.DNS_VERIFICATION_SERVER = "8.8.8.8:53"
         self.DNS_ROOT_DOMAIN = self.env_parser("DNS_ROOT_DOMAIN")
         self.AWS_COMMERCIAL_REGION = self.env_parser("AWS_COMMERCIAL_REGION")
@@ -72,11 +78,6 @@ class AppConfig(Config):
         )
         self.AWS_COMMERCIAL_SECRET_ACCESS_KEY = self.env_parser(
             "AWS_COMMERCIAL_SECRET_ACCESS_KEY"
-        )
-        self.AWS_GOVCLOUD_REGION = self.env_parser("AWS_GOVCLOUD_REGION")
-        self.AWS_GOVCLOUD_ACCESS_KEY_ID = self.env_parser("AWS_GOVCLOUD_ACCESS_KEY_ID")
-        self.AWS_GOVCLOUD_SECRET_ACCESS_KEY = self.env_parser(
-            "AWS_GOVCLOUD_SECRET_ACCESS_KEY"
         )
         self.ROUTE53_ZONE_ID = self.env_parser("ROUTE53_HOSTED_ZONE_ID")
         self.ALB_HOSTED_ZONE_ID = self.env_parser("ALB_HOSTED_ZONE_ID")

@@ -4,11 +4,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from migrator.extensions import config
-from migrator.models import CdnBase, DomainBase
+from migrator.models.cdn import CdnModel
+from migrator.models.domain import DomainModel
 
 cdn_engine = create_engine(config.CDN_BROKER_DATABASE_URI)
 domain_engine = create_engine(config.DOMAIN_BROKER_DATABASE_URI)
-Session = sessionmaker(binds={CdnBase: cdn_engine, DomainBase: domain_engine})
+Session = sessionmaker(binds={CdnModel: cdn_engine, DomainModel: domain_engine})
 
 
 @contextmanager

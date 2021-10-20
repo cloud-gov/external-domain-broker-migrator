@@ -21,8 +21,9 @@ def domain_route(clean_db):
 
     certificate = DomainCertificate()
     certificate.route = route
-    certificate.name = "my-cert-name"
-    certificate.arn = "my-cert-arn"
+    certificate.iam_server_certificate_name = "my-cert-name"
+    certificate.iam_server_certificate_arn = "my-cert-arn"
+    certificate.iam_server_certificate_id = "my-cert-id"
     return route
 
 
@@ -33,9 +34,8 @@ def domain_migration(clean_db, fake_cf_client, fake_requests, domain_route):
     )
 
 
-def test_gets_certificate_data(iam_govcloud, domain_migration):
-    iam_govcloud.expect_get_server_certificate("my-cert-name", "my-cert-id-but-longer")
-    assert domain_migration.iam_certificate_id == "my-cert-id-but-longer"
+def test_gets_certificate_data(domain_migration):
+    assert domain_migration.iam_certificate_id == "my-cert-id"
 
 
 def test_gets_active_cert(clean_db, domain_migration):
@@ -45,14 +45,16 @@ def test_gets_active_cert(clean_db, domain_migration):
 
     certificate0 = DomainCertificate()
     certificate0.route = route
-    certificate0.name = "my-cert-name-0"
-    certificate0.arn = "my-cert-arn-0"
+    certificate0.iam_server_certificate_name = "my-cert-name-0"
+    certificate0.iam_server_certificate_arn = "my-cert-arn-0"
+    certificate0.iam_server_certificate_id = "my-cert-id-0"
     certificate0.expires = datetime.datetime.now() + datetime.timedelta(days=1)
 
     certificate1 = DomainCertificate()
     certificate1.route = route
-    certificate1.name = "my-cert-name-2"
-    certificate1.arn = "my-cert-arn-2"
+    certificate1.iam_server_certificate_name = "my-cert-name-2"
+    certificate1.iam_server_certificate_arn = "my-cert-arn-2"
+    certificate1.iam_server_certificate_id = "my-cert-id-2"
     certificate1.expires = datetime.datetime.now() - datetime.timedelta(days=1)
 
     clean_db.add(route)
@@ -63,7 +65,10 @@ def test_gets_active_cert(clean_db, domain_migration):
     clean_db.expunge_all()
     route = clean_db.query(DomainRoute).filter_by(instance_id="asdf-asdf").first()
     domain_migration.route = route
-    assert domain_migration.current_certificate.arn == "my-cert-arn-0"
+    assert (
+        domain_migration.current_certificate.iam_server_certificate_arn
+        == "my-cert-arn-0"
+    )
 
 
 def subtest_migration_instantiable(

@@ -3,7 +3,7 @@ import datetime
 import pytest
 
 from migrator.migration import find_active_instances, CdnMigration
-from migrator.models import CdnRoute
+from migrator.models import CdnRoute, CdnCertificate
 
 
 def test_migration_init(clean_db, fake_cf_client, fake_requests):
@@ -94,7 +94,7 @@ def test_migration_loads_cloudfront_config(
     assert cdn_migration.origin_hostname == "cloud.test"
     assert cdn_migration.origin_path == ""
     assert cdn_migration.origin_protocol_policy == "https-only"
-    assert cdn_migration.iam_certificate_id == "mycertificateid"
+    assert cdn_migration.iam_certificate_id == "my-cert-id-0"
 
 
 def test_migration_loads_cloudfront_config_with_no_error_reponses(
@@ -193,9 +193,9 @@ def test_update_existing_cdn_domain(
             params["cloudfront_distribution_arn"]
             == "aws:arn:cloudfront:my-cloudfront-distribution"
         )
-        assert params["iam_server_certificate_name"] == "my-server-cert"
-        assert params["iam_server_certificate_id"] == "my-server-cert-id"
-        assert params["iam_server_certificate_arn"] == "aws:arn:iam:my-server-cert"
+        assert params["iam_server_certificate_name"] == "my-cert-name-0"
+        assert params["iam_server_certificate_id"] == "my-cert-id-0"
+        assert params["iam_server_certificate_arn"] == "my-cert-arn-0"
         error_config = params["error_responses"]
         assert error_config.get("500") == "/five-hundred"
         assert error_config.get("404") == "/four-oh-four"
@@ -259,15 +259,6 @@ def test_update_existing_cdn_domain(
             },
         },
     }
-    cdn_migration._iam_server_certificate_data = {
-        "Path": "/",
-        "ServerCertificateName": "my-server-cert",
-        "ServerCertificateId": "my-server-cert-id",
-        "Arn": "aws:arn:iam:my-server-cert",
-        "UploadDate": datetime.date(2021, 1, 1),
-        "Expiration": datetime.date(2022, 1, 1),
-    }
-
     response_body_update_instance = """
 {
   "metadata": {
@@ -686,7 +677,7 @@ def test_update_existing_cdn_domain_timeout_failure(
 
 
 def test_migration_migrates_happy_path(
-    clean_db, fake_cf_client, iam_commercial, route53, cloudfront, dns, fake_requests
+    clean_db, fake_cf_client, route53, cloudfront, dns, fake_requests
 ):
     """
     Migrate should:
@@ -742,6 +733,21 @@ def test_migration_migrates_happy_path(
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com,foo.com"
+    certificate0 = CdnCertificate()
+    certificate0.route = route
+    certificate0.iam_server_certificate_name = "my-cert-name-0"
+    certificate0.iam_server_certificate_arn = "my-cert-arn-0"
+    certificate0.iam_server_certificate_id = "my-cert-id-0"
+    certificate0.expires = datetime.datetime.now() + datetime.timedelta(days=1)
+
+    certificate1 = CdnCertificate()
+    certificate1.route = route
+    certificate1.iam_server_certificate_name = "my-cert-name-2"
+    certificate1.iam_server_certificate_arn = "my-cert-arn-2"
+    certificate1.iam_server_certificate_id = "my-cert-id-2"
+    certificate1.expires = datetime.datetime.now() - datetime.timedelta(days=1)
+    clean_db.add_all([route, certificate0, certificate1])
+    clean_db.commit()
     migration = CdnMigration(route, clean_db, fake_cf_client)
 
     # load caches so we can slim this test down.
