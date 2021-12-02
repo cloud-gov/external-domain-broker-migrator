@@ -15,7 +15,7 @@ Use these instructions if a migration fails, and you want to retry it
    $ cf purge-service-instance <migration instance name>
    ```
 3. If the migrator called `update` on the migration instance, you'll need to 
-4. Delete the new instance in the external domain broker database:
+   delete the new instance in the external domain broker database:
    ```
    $ cf connect-to-service external-domain-broker external-domain-broker-psql
    > delete from service_instance where id = '<guid from step 1>';
