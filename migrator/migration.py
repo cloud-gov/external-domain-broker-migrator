@@ -82,9 +82,9 @@ def migrate_ready_instances(session, client):
     return results
 
 
-def migrate_single_instance(instance_id, session, client):
+def migrate_single_instance(instance_id, session, client, skip_dns_check=False):
     migration = migration_for_instance_id(instance_id, session, client)
-    if migration.has_valid_dns:
+    if migration.has_valid_dns or skip_dns_check:
         try:
             migration.migrate()
         except Exception as e:
