@@ -22,6 +22,7 @@ class FakeCloudFront(FakeAWS):
         origin_protocol_policy: str = "https-only",
         bucket_prefix: str = "",
         custom_error_responses: str = None,
+        skip_empty_items: bool = False,
     ):
         if custom_error_responses is None:
             custom_error_responses = {"Quantity": 0}
@@ -43,6 +44,7 @@ class FakeCloudFront(FakeAWS):
                     origin_protocol_policy=origin_protocol_policy,
                     bucket_prefix=bucket_prefix,
                     custom_error_responses=custom_error_responses,
+                    skip_empty_items=skip_empty_items,
                 ),
                 "ETag": self.etag,
             },
@@ -76,6 +78,7 @@ class FakeCloudFront(FakeAWS):
         origin_protocol_policy: str = "https-only",
         bucket_prefix: str = "",
         custom_error_responses: dict = None,
+        skip_empty_items: bool = False,
     ):
         if custom_error_responses is None:
             custom_error_responses = {"Quantity": 0}
@@ -98,6 +101,7 @@ class FakeCloudFront(FakeAWS):
             origin_protocol_policy=origin_protocol_policy,
             bucket_prefix=bucket_prefix,
             custom_error_responses=custom_error_responses,
+            skip_empty_items=skip_empty_items,
         )
         distribution["ETag"] = self.etag
         self.stubber.add_response(
@@ -118,6 +122,7 @@ def distribution_config(
     origin_protocol_policy: str = "https-only",
     bucket_prefix: str = "",
     custom_error_responses: dict = None,
+    skip_empty_items: bool = False,
 ) -> Dict[str, Any]:
     if forwarded_headers is None:
         forwarded_headers = ["HOST"]
@@ -127,6 +132,11 @@ def distribution_config(
             "Quantity": len(forwarded_cookies),
             "Items": forwarded_cookies,
         }
+    headers = {
+        "Quantity": len(forwarded_headers),
+    }
+    if forwarded_headers or not skip_empty_items:
+        headers["Items"] = forwarded_headers
     return {
         "CallerReference": caller_reference,
         "Aliases": {"Quantity": len(domains), "Items": domains},
@@ -162,10 +172,7 @@ def distribution_config(
             "ForwardedValues": {
                 "QueryString": True,
                 "Cookies": cookies,
-                "Headers": {
-                    "Quantity": len(forwarded_headers),
-                    "Items": forwarded_headers,
-                },
+                "Headers": headers,
                 "QueryStringCacheKeys": {"Quantity": 0},
             },
             "TrustedSigners": {"Enabled": False, "Quantity": 0},
@@ -219,6 +226,7 @@ def distribution_response(
     origin_protocol_policy: str = "https-only",
     bucket_prefix: str = "",
     custom_error_responses: dict = None,
+    skip_empty_items: bool = False,
 ) -> Dict[str, Any]:
     if forwarded_headers is None:
         forwarded_headers = ["HOST"]
@@ -250,6 +258,7 @@ def distribution_response(
                 origin_protocol_policy,
                 bucket_prefix,
                 custom_error_responses,
+                skip_empty_items,
             ),
         }
     }

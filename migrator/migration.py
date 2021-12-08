@@ -346,7 +346,7 @@ class CdnMigration(Migration):
     def forwarded_headers(self):
         return self.cloudfront_distribution_config["DefaultCacheBehavior"][
             "ForwardedValues"
-        ]["Headers"]["Items"]
+        ]["Headers"].get("Items", [])
 
     @property
     def custom_error_responses(self):
