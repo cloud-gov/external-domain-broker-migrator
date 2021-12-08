@@ -29,6 +29,11 @@ def parse_args(args):
     action_group.add_argument(
         "--instance", help="run once against the specified instance"
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Skip DNS checks for single-instance migration",
+    )
     return parser.parse_args(args)
 
 
@@ -45,7 +50,9 @@ def main():
             schedule.run_pending()
     elif args.instance:
         with session_handler() as session:
-            migrate_single_instance(args.instance, session, get_cf_client(config))
+            migrate_single_instance(
+                args.instance, session, get_cf_client(config), skip_dns_check=args.force
+            )
 
 
 if __name__ == "__main__":

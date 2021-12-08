@@ -14,7 +14,20 @@ def test_arg_parse_returns_cron_for_cron():
     assert not parsed.instance
 
 
-def test_arg_parse_returns_instance_for_instance():
-    parsed = parse_args(["--instance", "asdf-asdf"])
+def test_arg_parse_returns_instance_for_instance_and_not_forced():
+    parsed = parse_args(
+        [
+            "--instance",
+            "asdf-asdf",
+        ]
+    )
     assert parsed.instance == "asdf-asdf"
     assert not parsed.cron
+    assert not parsed.force
+
+
+def test_arg_parse_returns_instance_for_instance_and_forced_for_forced():
+    parsed = parse_args(["--instance", "asdf-asdf", "--force"])
+    assert parsed.instance == "asdf-asdf"
+    assert not parsed.cron
+    assert parsed.force
