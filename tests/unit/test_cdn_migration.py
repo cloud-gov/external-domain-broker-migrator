@@ -128,6 +128,39 @@ def test_migration_loads_cloudfront_config_with_no_error_reponses(
     assert cdn_migration.origin_protocol_policy == "https-only"
 
 
+def test_migration_loads_cloudfront_config_with_no_error_reponses(
+    clean_db, cloudfront, fake_cf_client, cdn_migration
+):
+    domains = ["example.gov"]
+    cloudfront.expect_get_distribution(
+        forwarded_headers=[],
+        caller_reference="asdf",
+        domains=domains,
+        certificate_id="not-used-in-this-test",
+        origin_hostname="cloud.test",
+        origin_path="",
+        distribution_id="sample-distribution-id",
+        status="active",
+        custom_error_responses={"Quantity": 0},
+        skip_empty_items=True,
+    )
+    cdn_migration.route.dist_id = "sample-distribution-id"
+    assert cdn_migration.cloudfront_distribution_data is not None
+    cloudfront.assert_no_pending_responses()
+    assert cdn_migration.cloudfront_distribution_config is not None
+    assert (
+        cdn_migration.cloudfront_distribution_arn
+        == "arn:aws:cloudfront::000000000000:distribution/sample-distribution-id"
+    )
+    assert cdn_migration.forward_cookie_policy == "all"
+    assert cdn_migration.forwarded_cookies == []
+    assert cdn_migration.forwarded_headers == []
+    assert cdn_migration.custom_error_responses == {}
+    assert cdn_migration.origin_hostname == "cloud.test"
+    assert cdn_migration.origin_path == ""
+    assert cdn_migration.origin_protocol_policy == "https-only"
+
+
 @pytest.mark.parametrize(
     "input_,expected",
     [
