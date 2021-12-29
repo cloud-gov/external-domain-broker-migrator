@@ -20,7 +20,7 @@ Use these instructions if a migration fails, and you want to retry it
    $ cf connect-to-service external-domain-broker external-domain-broker-psql
    > update service_instance set deactivated_at = now() where id = '<guid from step 1>';
    ```
-4. Get the guid of the original insance:
+4. Get the guid of the original instance:
    ```
    $ cf service <instance-name> --guid
    ```
