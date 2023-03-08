@@ -1,6 +1,7 @@
 ---
 applications:
 - name: ((APP_NAME))
+  stack: cflinuxfs4
   memory: 256M
   instances: 1
   command: python3 -m migrator --cron
