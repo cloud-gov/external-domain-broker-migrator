@@ -1,34 +1,46 @@
 # external-domain-broker-migrator
 
-Migrate [cdn-broker](https://github.com/cloud-gov/cdn-broker) and 
+Migrate [cdn-broker](https://github.com/cloud-gov/cdn-broker) and
 [custom-domain](https://github.com/cloud-gov/cf-domain-broker-alb) instances to the [external-domain-broker](https://github.com/cloud-gov/external-domain-broker)
 
+## Migrating a single instance via a one-off task
+
+```shell
+python3 -m migrator --instance <old-domain-or-cdn-service-guid>
+```
 
 ## Migration Plan
 
-The external-domain-broker requires customers to set up three ALIAS/CNAME records 
-pointing to predictable DNS names under our control. Two are for the hostname of the actual
-site (e.g. `www.example.gov`), one as an A record, one as an AAAA record. The other is a 
-TXT record which we use for validation to retrieve Let's Encrypt certificates on their
+The external-domain-broker requires customers to set up three ALIAS/CNAME records
+pointing to predictable DNS names under our control.
+
+Two of the records are for the hostname of the actual
+site (e.g. `www.example.gov`), one as an `A` record, one as an `AAAA` record. The other is a
+`TXT` record which we use for validation to retrieve Let's Encrypt certificates on their
 behalf. This is why we cannot simply migrate behind the scenes, all at once.
-The migrator contains a script to pre-create our side of these DNS records, and will
-pre-create the TXT records with a semaphore value. This way, regardless of whether a 
+
+This migrator contains a script to pre-create our side of these DNS records, and will
+pre-create the TXT records with a semaphore value. This way, regardless of whether a
 customer uses a CNAME (which is publicly discoverable) or an ALIAS (which is internal
 to their DNS), we'll be able to detect their changes easily.
-The migrator works by periodically checking all the active instances in the 
-cdn-broker's database. It queries DNS for the _acme-challenge TXT record to
-see if the customer has configured it to point to the intermediate record 
-used by the external-domain broker. 
+
+The migrator works by periodically checking all the active instances in the
+`cdn-broker`'s database. It queries DNS for the _acme-challenge TXT record to
+see if the customer has configured it to point to the intermediate record
+used by the external-domain broker.
+
+The migrator goes through the following steps to migrate a service:
+
 1. Enable the external-domain-service migration plan in the service instance's
    space. This plan is a special plan used only for this purpose.
 2. Create an instance of the migration plan in the space.
 3. Query CloudFront and IAM to get the settings of the existing service instance
-4. Transform the information from CloudFront, IAM, and the cdn-broker database 
+4. Transform the information from CloudFront, IAM, and the cdn-broker database
    to create a CdnServiceInstance in the external-domain-broker's database
 5. Call update-service on the new instance so CAPI knows about the plan change.
-6. Call purge-service on the old service instance, so CAPI knows it's gone, but 
+6. Call purge-service on the old service instance, so CAPI knows it's gone, but
    the cdn-broker doesn't delete the cloudfront distribution
-7. Mark the instance as inactive in the cdn-broker database so the cdn-broker 
+7. Mark the instance as inactive in the cdn-broker database so the cdn-broker
    doesn't try to renew its certificate
 8. Disable the external-domain-service migration plan in the space
 9. Rename the new service instance to the name of the old service instance
