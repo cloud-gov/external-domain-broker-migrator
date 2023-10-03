@@ -94,7 +94,7 @@ sqlalchemy-utils==0.37.8
     # via -r pip-tools/requirements.in
 typing-extensions==3.10.0.0
     # via aiohttp
-urllib3==1.26.6
+urllib3==1.26.17
     # via
     #   botocore
     #   requests
