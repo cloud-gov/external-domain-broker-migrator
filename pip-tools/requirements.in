@@ -3,6 +3,7 @@ cfenv
 
 # later versions of cf client break tests. We should probably fix them, but this is good for now
 cloudfoundry-client==1.17.0
+# protobuf 3.21+ is not compatible with cloudfoundry 1.17.0
 protobuf<3.21
 cryptography
 dnspython
