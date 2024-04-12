@@ -9,7 +9,8 @@ from migrator import extensions
 def test_can_get_session():
     with db.session_handler() as session:
         result = session.execute(
-            "SELECT count(1) FROM certificates", bind=db.domain_engine
+            sa.text("SELECT count(1) FROM certificates"),
+            bind_arguments={"bind": db.domain_engine},
         )
         assert result.first() == (0,)
 

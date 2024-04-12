@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 
+import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -25,6 +26,10 @@ def check_connections(
     session_maker=Session, cdn_binding=cdn_engine, domain_binding=domain_engine
 ):
     session = session_maker()
-    session.execute("SELECT 1 FROM certificates", bind=cdn_binding)
-    session.execute("SELECT 1 FROM certificates", bind=domain_binding)
+    session.execute(
+        sa.text("SELECT 1 FROM certificates"), bind_arguments={"bind": cdn_binding}
+    )
+    session.execute(
+        sa.text("SELECT 1 FROM certificates"), bind_arguments={"bind": domain_binding}
+    )
     session.close()

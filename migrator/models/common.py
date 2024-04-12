@@ -21,6 +21,8 @@ class OperationState(str, Enum):
 
 
 class RouteModel:
+    __allow_unmapped__ = True
+
     @property
     def needs_renewal(self):
         return all([c.needs_renewal for c in self.certificates])
@@ -33,6 +35,8 @@ class RouteModel:
 
 
 class CertificateModel:
+    __allow_unmapped__ = True
+
     @property
     def needs_renewal(self):
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -40,10 +44,13 @@ class CertificateModel:
 
 
 class OperationModel:
+    __allow_unmapped__ = True
     pass
 
 
 class AcmeUserV2Model:
+    __allow_unmapped__ = True
+
     @classmethod
     def get_user(cls, session):
         users: List = session.query(cls).all()
@@ -57,4 +64,5 @@ class AcmeUserV2Model:
 
 
 class ChallengeModel:
+    __allow_unmapped__ = True
     pass
