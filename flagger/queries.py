@@ -5,6 +5,7 @@ from migrator.migration import (
     find_active_cdn_instances,
 )
 
+
 # Extract a list of domain names from all CdnRoutes.
 def find_domains(session):
     routes = find_active_instances(session)
