@@ -4,7 +4,7 @@
 #
 #    ./dev update-requirements
 #
-aiohttp==3.7.4
+aiohttp==3.9.4
     # via cloudfoundry-client
 async-timeout==3.0.1
     # via aiohttp
