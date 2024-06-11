@@ -10,13 +10,13 @@ async-timeout==3.0.1
     # via aiohttp
 attrs==23.2.0
     # via aiohttp
-boto3==1.34.83
+boto3==1.34.123
     # via -r pip-tools/requirements.in
-botocore==1.34.83
+botocore==1.34.123
     # via
     #   boto3
     #   s3transfer
-certifi==2024.2.2
+certifi==2024.6.2
     # via requests
 cfenv==0.5.3
     # via -r pip-tools/requirements.in
@@ -28,7 +28,7 @@ charset-normalizer==3.3.2
     # via requests
 cloudfoundry-client==1.17.0
     # via -r pip-tools/requirements.in
-cryptography==42.0.5
+cryptography==42.0.8
     # via -r pip-tools/requirements.in
 dnspython==2.6.1
     # via -r pip-tools/requirements.in
@@ -46,7 +46,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-marshmallow==3.21.1
+marshmallow==3.21.3
     # via environs
 multidict==6.0.5
     # via
@@ -56,7 +56,7 @@ oauth2-client==1.2.1
     # via cloudfoundry-client
 orderedmultidict==1.0.1
     # via furl
-packaging==24.0
+packaging==24.1
     # via marshmallow
 polling2==0.4.6
     # via cloudfoundry-client
@@ -74,13 +74,13 @@ python-dotenv==1.0.1
     # via environs
 pyyaml==5.4.1
     # via cloudfoundry-client
-requests==2.31.0
+requests==2.32.3
     # via
     #   cloudfoundry-client
     #   oauth2-client
 s3transfer==0.10.1
     # via boto3
-schedule==1.2.1
+schedule==1.2.2
     # via -r pip-tools/requirements.in
 six==1.16.0
     # via
@@ -88,13 +88,13 @@ six==1.16.0
     #   orderedmultidict
     #   python-dateutil
     #   websocket-client
-sqlalchemy==2.0.29
+sqlalchemy==2.0.30
     # via
     #   -r pip-tools/requirements.in
     #   sqlalchemy-utils
 sqlalchemy-utils==0.41.2
     # via -r pip-tools/requirements.in
-typing-extensions==4.11.0
+typing-extensions==4.12.2
     # via
     #   aiohttp
     #   sqlalchemy
