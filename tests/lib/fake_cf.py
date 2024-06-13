@@ -30,19 +30,19 @@ def get_test_client(fake_requests):
                     "logging": None,
                     "log_stream": None,
                     "app_ssh": dict(href="ssh.localhost:80"),
-                    "uaa": dict(href="https://uaa.localhost"),
+                    "uaa": dict(href="http://uaa.localhost"),
                     "network_policy_v0": dict(
-                        href="https://api.localhost/networking/v0/external"
+                        href="http://api.localhost/networking/v0/external"
                     ),
                     "network_policy_v1": dict(
-                        href="https://api.localhost/networking/v1/external"
+                        href="http://api.localhost/networking/v1/external"
                     ),
                 }
             )
         ),
     )
     fake_requests.post(
-        "http://login.localhost/oauth/token",
+        "http://uaa.localhost/oauth/token",
         text=json.dumps(
             dict(access_token="access-token", refresh_token="refresh-token")
         ),
