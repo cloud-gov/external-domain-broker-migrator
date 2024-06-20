@@ -16,3 +16,5 @@ jobs:
         run: python3 -m pip install -r pip-tools/dev-requirements.txt
       - name: Test
         run: python3 -m pytest tests/unit
+        env:
+          ENV: unit
