@@ -6,7 +6,7 @@ from migrator import models
 from migrator import extensions
 
 
-def test_can_get_session():
+def test_can_get_session(clean_db):
     with db.session_handler() as session:
         result = session.execute(
             sa.text("SELECT count(1) FROM certificates"),
@@ -15,7 +15,7 @@ def test_can_get_session():
         assert result.first() == (0,)
 
 
-def test_can_create_route():
+def test_can_create_route(clean_db):
     # the assertion here is really just that no exceptions are raised
 
     # note that we shouldn't _actually_ be creating routes in this project

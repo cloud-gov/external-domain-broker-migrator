@@ -46,6 +46,34 @@ The migrator goes through the following steps to migrate a service:
 9. Rename the new service instance to the name of the old service instance
 10. (maybe) email the account manager to inform them the migration has completed
 
+## Testing
+
+Tests are split into two categories: unit and integration.
+
+### Unit tests
+
+Unit tests can be run without external services - this should help speed up testing and enable
+tests being run in e.g, github actions.
+
+To run unit tests:
+1. create a virtual environment
+2. install the dev dependencies into your environment
+3. set `ENV` to `unit`
+4. run pytest, specifying the unit directory
+
+```bash
+$ python3 -m venv venv
+$ venv/bin/python3 -m pip install -r ./pip-tools/dev-requirements.txt
+$ ENV=unit venv/bin/python3 -m pytest tests/unit
+```
+
+### Integration tests
+
+Integration tests require out-of-process services, making them more realistic but harder to run.
+Specifically, they include `pebble` as a stand-in for Lets Encrypt and they use `postgresql` rather than `sqlite`.
+
+Integration tests require a working docker (or equivalent) environment, and can be run with `./dev tests`
+
 ## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md) for additional information.
