@@ -3,7 +3,6 @@ from typing import List
 
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
-from sqlalchemy.dialects import postgresql
 from sqlalchemy import orm
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
     AesGcmEngine,
@@ -20,6 +19,8 @@ from migrator.models.common import (
     AcmeUserV2Model,
     OperationModel,
     OperationState,
+    timestamp,
+    blob_or_bytea
 )
 
 convention = {
@@ -33,6 +34,12 @@ convention = {
 metadata = sa.MetaData(naming_convention=convention)
 DomainModel = orm.declarative_base(metadata=metadata)
 
+if config.ENV == 'unit':
+    from sqlalchemy.dialects import sqlite
+    text_array = sqlite.JSON
+else:
+    from sqlalchemy.dialects import postgresql
+    text_array = postgresql.ARRAY(sa.Text)
 
 def db_encryption_key():
     return config.DOMAIN_DATABASE_ENCRYPTION_KEY
@@ -51,8 +58,8 @@ class DomainRoute(DomainModel, RouteModel):
 
     instance_id = sa.Column("guid", sa.Text, primary_key=True)
     state = sa.Column(sa.Text, nullable=False, index=True)
-    domains = sa.Column(postgresql.ARRAY(sa.Text))
-    challenge_json = sa.Column(postgresql.BYTEA)
+    domains = sa.Column(text_array)
+    challenge_json = sa.Column(blob_or_bytea)
     user_data_id = sa.Column(sa.Integer)
     alb_proxy_arn = sa.Column(sa.Text)
     alb_proxy: DomainAlbProxy = orm.relationship(
@@ -81,17 +88,17 @@ class DomainCertificate(DomainModel, CertificateModel):
     __tablename__ = "certificates"
 
     id = sa.Column(sa.Integer, sa.Sequence("certificates_id_seq"), primary_key=True)
-    created_at = sa.Column(postgresql.TIMESTAMP)
-    updated_at = sa.Column(postgresql.TIMESTAMP)
-    deleted_at = sa.Column(postgresql.TIMESTAMP, index=True)
+    created_at = sa.Column(timestamp)
+    updated_at = sa.Column(timestamp)
+    deleted_at = sa.Column(timestamp, index=True)
     route_guid = sa.Column(sa.Text)
     domain = sa.Column(sa.Text)
     # cert_url is the Let's Encrypt URL for the certificate
     cert_url = sa.Column(sa.Text)
     # certificate is the actual body of the certificate chain
     # this was used by the old broker, but the renewer uses fullchain_pem and leaf_pem instead
-    certificate = sa.Column(postgresql.BYTEA)
-    expires = sa.Column(postgresql.TIMESTAMP, index=True)
+    certificate = sa.Column(blob_or_bytea)
+    expires = sa.Column(timestamp, index=True)
     private_key_pem: str = sa.Column(
         StringEncryptedType(sa.Text, db_encryption_key, AesGcmEngine, "pkcs5")
     )
@@ -111,12 +118,12 @@ class DomainUserData(DomainModel):
     __tablename__ = "user_data"
 
     id = sa.Column(sa.Integer, primary_key=True)
-    created_at = sa.Column(postgresql.TIMESTAMP)
-    updated_at = sa.Column(postgresql.TIMESTAMP)
-    deleted_at = sa.Column(postgresql.TIMESTAMP, index=True)
+    created_at = sa.Column(timestamp)
+    updated_at = sa.Column(timestamp)
+    deleted_at = sa.Column(timestamp, index=True)
     email = sa.Column(sa.Text, nullable=False)
-    reg = sa.Column(postgresql.BYTEA)
-    key = sa.Column(postgresql.BYTEA)
+    reg = sa.Column(blob_or_bytea)
+    key = sa.Column(blob_or_bytea)
 
 
 class DomainOperation(DomainModel, OperationModel):

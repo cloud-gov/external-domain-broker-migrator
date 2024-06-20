@@ -4,6 +4,7 @@ from environs import Env
 
 def config_from_env():
     environments = {
+        "unit": UnitConfig,
         "local": LocalConfig,
         "development": DevelopmentConfig,
         "staging": StagingConfig,
@@ -22,6 +23,38 @@ class Config:
         # this is a well-known constant
         # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
         self.CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2"
+
+
+class UnitConfig(Config):
+    def __init__(self):
+        super().__init__()
+        self.TESTING = True
+        self.DEBUG = True
+        # We have to use `uri=true` so we can make unique databases in-memory
+        self.CDN_BROKER_DATABASE_URI = "sqlite:///file::cdn?mode=memory&uri=true"
+        self.DOMAIN_BROKER_DATABASE_URI = "sqlite:///file::domain?mode=memory&uri=true"
+        self.DNS_VERIFICATION_SERVER = "127.0.0.1:8053"
+        self.DNS_ROOT_DOMAIN = "domains.cloud.test"
+        self.AWS_COMMERCIAL_REGION = "us-west-1"
+        self.AWS_COMMERCIAL_ACCESS_KEY_ID = "ASIANOTAREALKEY"
+        self.AWS_COMMERCIAL_SECRET_ACCESS_KEY = "THIS_IS_A_FAKE_KEY"
+        self.AWS_GOVCLOUD_REGION = "us-gov-west-1"
+        self.AWS_GOVCLOUD_ACCESS_KEY_ID = "ASIANOTAREALKEYGOV"
+        self.AWS_GOVCLOUD_SECRET_ACCESS_KEY = "THIS_IS_A_FAKE_KEY_GOV"
+        self.ROUTE53_ZONE_ID = "FAKEZONEID"
+        # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
+        self.ALB_HOSTED_ZONE_ID = "FAKEZONEIDFORALBS"
+        self.AWS_POLL_WAIT_TIME_IN_SECONDS = 0.01
+        self.AWS_POLL_MAX_ATTEMPTS = 10
+        self.CF_USERNAME = "fake-username"
+        self.CF_PASSWORD = "fake-password"
+        self.CF_API_ENDPOINT = "http://localhost"
+        self.SERVICE_CHANGE_RETRY_COUNT = 2
+        self.SERVICE_CHANGE_POLL_TIME_SECONDS = 0.01
+        self.MIGRATION_TIME = "11:00:00"
+        self.MIGRATION_PLAN_ID = "FAKE-MIGRATION-PLAN-GUID"
+        self.CDN_PLAN_ID = "FAKE-CDN-PLAN-GUID"
+        self.DOMAIN_PLAN_ID = "FAKE-DOMAIN-PLAN-GUID"
 
 
 class LocalConfig(Config):

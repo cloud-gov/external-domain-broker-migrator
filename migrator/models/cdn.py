@@ -4,7 +4,6 @@ from typing import List
 
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
-from sqlalchemy.dialects import postgresql
 from sqlalchemy import orm
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
     AesGcmEngine,
@@ -21,6 +20,8 @@ from migrator.models.common import (
     AcmeUserV2Model,
     ChallengeModel,
     OperationState,
+    timestamp,
+    blob_or_bytea,
 )
 
 convention = {
@@ -49,12 +50,12 @@ class CdnUserData(CdnModel):
     __tablename__ = "user_data"
 
     id = sa.Column(sa.Integer, primary_key=True)
-    created_at = sa.Column(postgresql.TIMESTAMP)
-    updated_at = sa.Column(postgresql.TIMESTAMP)
-    deleted_at = sa.Column(postgresql.TIMESTAMP, index=True)
+    created_at = sa.Column(timestamp)
+    updated_at = sa.Column(timestamp)
+    deleted_at = sa.Column(timestamp, index=True)
     email = sa.Column(sa.Text, nullable=False)
-    reg = sa.Column(postgresql.BYTEA)
-    key = sa.Column(postgresql.BYTEA)
+    reg = sa.Column(blob_or_bytea)
+    key = sa.Column(blob_or_bytea)
 
 
 class CdnRoute(CdnModel, RouteModel):
@@ -69,15 +70,15 @@ class CdnRoute(CdnModel, RouteModel):
     domain_internal = sa.Column(sa.Text)
     # domain_external is a comma-separated list of domain names the user wants the CloudFront distribution to respond to
     domain_external = sa.Column(sa.Text)
-    created_at = sa.Column(postgresql.TIMESTAMP)
-    updated_at = sa.Column(postgresql.TIMESTAMP)
-    deleted_at = sa.Column(postgresql.TIMESTAMP, index=True)
+    created_at = sa.Column(timestamp)
+    updated_at = sa.Column(timestamp)
+    deleted_at = sa.Column(timestamp, index=True)
     instance_id = sa.Column(sa.Text, index=True, nullable=False)
     dist_id = sa.Column(sa.Text)
     origin = sa.Column(sa.Text)
     path = sa.Column(sa.Text)
     insecure_origin = sa.Column(sa.Boolean)
-    challenge_json = sa.Column(postgresql.BYTEA)
+    challenge_json = sa.Column(blob_or_bytea)
     user_data_id = sa.Column(sa.Integer, sa.ForeignKey("acme_user_v2.id"))
     certificates: List["CdnCertificate"] = orm.relationship(
         "CdnCertificate",
@@ -104,17 +105,17 @@ class CdnCertificate(CdnModel, CertificateModel):
     __tablename__ = "certificates"
 
     id = sa.Column(sa.Integer, primary_key=True)
-    created_at = sa.Column(postgresql.TIMESTAMP)
-    updated_at = sa.Column(postgresql.TIMESTAMP)
-    deleted_at = sa.Column(postgresql.TIMESTAMP, index=True)
+    created_at = sa.Column(timestamp)
+    updated_at = sa.Column(timestamp)
+    deleted_at = sa.Column(timestamp, index=True)
     route_id = sa.Column(sa.Integer)
     domain = sa.Column(sa.Text)
     # cert_url is the Let's Encrypt URL for the certificate
     cert_url = sa.Column(sa.Text)
     # certificate is the actual body of the certificate chain
     # this was used by the old broker, but the renewer uses fullchain_pem and leaf_pem instead
-    certificate = sa.Column(postgresql.BYTEA)
-    expires = sa.Column(postgresql.TIMESTAMP, index=True)
+    certificate = sa.Column(blob_or_bytea)
+    expires = sa.Column(timestamp, index=True)
     private_key_pem: str = sa.Column(
         StringEncryptedType(sa.Text, db_encryption_key, AesGcmEngine, "pkcs5")
     )
