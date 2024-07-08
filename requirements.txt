@@ -12,9 +12,9 @@ async-timeout==4.0.3
     # via aiohttp
 attrs==23.2.0
     # via aiohttp
-boto3==1.34.126
+boto3==1.34.140
     # via -r pip-tools/requirements.in
-botocore==1.34.126
+botocore==1.34.140
     # via
     #   boto3
     #   s3transfer
@@ -64,7 +64,7 @@ packaging==24.1
     # via marshmallow
 polling2==0.5.0
     # via cloudfoundry-client
-protobuf==5.27.1
+protobuf==5.27.2
     # via
     #   -r pip-tools/requirements.in
     #   cloudfoundry-client
@@ -82,7 +82,7 @@ requests==2.32.3
     # via
     #   cloudfoundry-client
     #   oauth2-client
-s3transfer==0.10.1
+s3transfer==0.10.2
     # via boto3
 schedule==1.2.2
     # via -r pip-tools/requirements.in
@@ -91,7 +91,7 @@ six==1.16.0
     #   furl
     #   orderedmultidict
     #   python-dateutil
-sqlalchemy==2.0.30
+sqlalchemy==2.0.31
     # via
     #   -r pip-tools/requirements.in
     #   sqlalchemy-utils
