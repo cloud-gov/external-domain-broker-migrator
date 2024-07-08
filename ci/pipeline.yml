@@ -13,14 +13,8 @@ jobs:
   - get: src
     params: {depth: 1}
     trigger: true
-  - get: secrets
-    # Remember to manually trigger a new build if you upload a new version
-    # of the credentials file.
-    trigger: false
-  - set_pipeline: ((name))
+  - set_pipeline: self
     file: src/ci/pipeline.yml
-    var_files:
-    - secrets/((name)).yml
 
 - name: test
   plan:
@@ -75,12 +69,12 @@ jobs:
         CF_USERNAME: ((dev-cf-username))
         CF_PASSWORD: ((dev-cf-password))
         CF_API_ENDPOINT: ((dev-cf-api-endpoint))
-        SMTP_HOST: ((dev-smtp-host))
-        SMTP_FROM: ((dev-smtp-from))
-        SMTP_CERT: ((dev-smtp-cert))
-        SMTP_USER: ((dev-smtp-user))
-        SMTP_PASS: ((dev-smtp-pass))
-        SMTP_PORT: ((dev-smtp-port))
+        SMTP_HOST: ((smtp-host))
+        SMTP_FROM: ((smtp-from))
+        SMTP_CERT: ((smtp-cert.certificate))
+        SMTP_USER: ((smtp-user))
+        SMTP_PASS: ((smtp-pass))
+        SMTP_PORT: ((smtp-port))
         SMTP_TO: ((dev-smtp-to))
         MIGRATION_PLAN_ID: ((dev-migration-plan-id))
         CDN_PLAN_ID: ((dev-cdn-plan-id))
@@ -133,12 +127,12 @@ jobs:
         CF_USERNAME: ((staging-cf-username))
         CF_PASSWORD: ((staging-cf-password))
         CF_API_ENDPOINT: ((staging-cf-api-endpoint))
-        SMTP_HOST: ((staging-smtp-host))
-        SMTP_FROM: ((staging-smtp-from))
-        SMTP_CERT: ((staging-smtp-cert))
-        SMTP_USER: ((staging-smtp-user))
-        SMTP_PASS: ((staging-smtp-pass))
-        SMTP_PORT: ((staging-smtp-port))
+        SMTP_HOST: ((smtp-host))
+        SMTP_FROM: ((smtp-from))
+        SMTP_CERT: ((smtp-cert.certificate))
+        SMTP_USER: ((smtp-user))
+        SMTP_PASS: ((smtp-pass))
+        SMTP_PORT: ((smtp-port))
         SMTP_TO: ((staging-smtp-to))
         MIGRATION_PLAN_ID: ((staging-migration-plan-id))
         CDN_PLAN_ID: ((staging-cdn-plan-id))
@@ -190,12 +184,12 @@ jobs:
         CF_USERNAME: ((production-cf-username))
         CF_PASSWORD: ((production-cf-password))
         CF_API_ENDPOINT: ((production-cf-api-endpoint))
-        SMTP_HOST: ((production-smtp-host))
-        SMTP_FROM: ((production-smtp-from))
-        SMTP_CERT: ((production-smtp-cert))
-        SMTP_USER: ((production-smtp-user))
-        SMTP_PASS: ((production-smtp-pass))
-        SMTP_PORT: ((production-smtp-port))
+        SMTP_HOST: ((smtp-host))
+        SMTP_FROM: ((smtp-from))
+        SMTP_CERT: ((smtp-cert.certificate))
+        SMTP_USER: ((smtp-user))
+        SMTP_PASS: ((smtp-pass))
+        SMTP_PORT: ((smtp-port))
         SMTP_TO: ((production-smtp-to))
         MIGRATION_PLAN_ID: ((production-migration-plan-id))
         CDN_PLAN_ID: ((production-cdn-plan-id))
@@ -225,21 +219,13 @@ jobs:
 
 resources:
 
-- name: secrets
-  type: s3-iam
-  icon: cloud-lock
-  source:
-    region_name: ((concourse-varz-bucket-region))
-    bucket: ((concourse-varz-bucket))
-    versioned_file: ((name)).yml
-
 - name: src
   type: git
   icon: github-circle
   check_every: 10s
   source:
-    uri: https://github.com/cloud-gov/((name))
-    branch: ((git-branch))
+    uri: https://github.com/cloud-gov/external-domain-broker-migrator
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: dev-docker-image
@@ -290,8 +276,8 @@ resources:
   type: git
   icon: github-circle
   source:
-    uri: ((pipeline-tasks-git-url))
-    branch: ((pipeline-tasks-git-branch))
+    uri: https://github.com/cloud-gov/cg-pipeline-tasks
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 
@@ -299,15 +285,6 @@ resources:
 #  RESOURCE TYPES
 
 resource_types:
-
-- name: s3-iam
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: s3-resource
-    aws_region: us-gov-west-1
-    tag: latest
 
 - name: slack-notification
   type: registry-image
