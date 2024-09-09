@@ -22,19 +22,10 @@ jobs:
     params: {depth: 1}
     trigger: true
     passed: [reconfigure]
-
-  - put: dev-docker-image
-    # We push this docker image _only_ so that we can use it in the next task
-    # below.  :shrug: concourse.
-    params:
-      build: src
-      dockerfile: src/docker/Dockerfile.dev
-      tag_as_latest: true
-      cache: true
-
+  - get: external-domain-migrator-testing
   - task: test
     # Run the tests using the image pushed above.
-    image: dev-docker-image
+    image: external-domain-migrator-testing
     config:
       platform: linux
       params:
@@ -228,14 +219,14 @@ resources:
     branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
-- name: dev-docker-image
-  type: docker-image
-  icon: docker
+- name: external-domain-broker-migrator-testing
+  type: registry-image
   source:
-    email: ((docker-email))
-    username: ((docker-username))
-    password: ((docker-password))
-    repository: ((docker-image-dev))
+    aws_access_key_id: ((ecr_aws_key))
+    aws_secret_access_key: ((ecr_aws_secret))
+    repository: external-domain-broker-migrator-testing
+    aws_region: us-gov-west-1
+    tag: latest
 
 - name: cf-dev
   type: cf
