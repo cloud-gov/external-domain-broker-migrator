@@ -22,10 +22,10 @@ jobs:
     params: {depth: 1}
     trigger: true
     passed: [reconfigure]
-  - get: external-domain-migrator-testing
+  - get: external-domain-broker-migrator-testing
   - task: test
     # Run the tests using the image pushed above.
-    image: external-domain-migrator-testing
+    image: external-domain-broker-migrator-testing
     config:
       platform: linux
       params:
