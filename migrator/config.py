@@ -95,11 +95,19 @@ class AppConfig(Config):
         super().__init__()
         cdn_db = self.cf_env_parser.get_service(name="rds-cdn-broker")
         self.CDN_BROKER_DATABASE_URI = normalize_db_url(cdn_db.credentials["uri"])
+        if not self.CDN_BROKER_DATABASE_URI.endswith("?sslmode=require"):
+            self.CDN_BROKER_DATABASE_URI = (
+                f"{self.CDN_BROKER_DATABASE_URI}?sslmode=require"
+            )
         self.CDN_DATABASE_ENCRYPTION_KEY = self.env_parser(
             "CDN_DATABASE_ENCRYPTION_KEY"
         )
         alb_db = self.cf_env_parser.get_service(name="rds-domain-broker")
         self.DOMAIN_BROKER_DATABASE_URI = normalize_db_url(alb_db.credentials["uri"])
+        if not self.DOMAIN_BROKER_DATABASE_URI.endswith("?sslmode=require"):
+            self.DOMAIN_BROKER_DATABASE_URI = (
+                f"{self.DOMAIN_BROKER_DATABASE_URI}?sslmode=require"
+            )
         self.DOMAIN_DATABASE_ENCRYPTION_KEY = self.env_parser(
             "DOMAIN_DATABASE_ENCRYPTION_KEY"
         )
