@@ -135,18 +135,11 @@ class Migration:
             self._org_id = cf.get_org_id_for_space_id(self.space_id, self.client)
         return self._org_id
 
-    @property
-    def service_plan_visibility_ids(self):
-        return cf.get_service_plan_visibility_ids_for_org(
-            config.MIGRATION_PLAN_ID, self.org_id, self.client
-        )
-
     def enable_migration_service_plan(self):
         cf.enable_plan_for_org(config.MIGRATION_PLAN_ID, self.org_id, self.client)
 
     def disable_migration_service_plan(self):
-        for service_plan_visibility_id in self.service_plan_visibility_ids:
-            cf.disable_plan_for_org(service_plan_visibility_id, self.client)
+        cf.disable_plan_for_org(config.MIGRATION_PLAN_ID, self.org_id, self.client)
 
     def create_bare_migrator_instance_in_org_space(self):
         logger.debug("creating bare instance for %s", self.instance_id)
@@ -268,7 +261,8 @@ class Migration:
         try:
             self._migrate()
         except Exception as e:
-            self.send_failed_operation_alert(e)
+            if config.ENV not in {"unit", "local"}:
+                self.send_failed_operation_alert(e)
             # the goal here is to try to make it easier to find the logs in Kibana
             # since we can't just email ourselves the stack trace
             logger.exception("failed migrating %s", repr(self))

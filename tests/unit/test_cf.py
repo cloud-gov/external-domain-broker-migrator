@@ -15,29 +15,24 @@ def test_get_client(fake_requests):
     client = get_test_client(fake_requests)
 
 
-def test_enable_service_plan_2(fake_requests, fake_cf_client):
+def test_enable_service_plan(fake_requests, fake_cf_client):
     response_body = """{
-  "metadata": {
-    "guid": "new-plan-visibility-guid",
-    "url": "/v2/service_plan_visibilities/new-plan-visibility-guid",
-    "created_at": "2016-06-08T16:41:31Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "service_plan_guid": "foo",
-    "organization_guid": "bar",
-    "service_plan_url": "/v2/service_plans/foo",
-    "organization_url": "/v2/organizations/bar"
-  }
-}"""
+  "type": "organization",
+  "organizations": [
+    {
+      "guid": "bar",
+      "name": "other_org"
+    }
+  ]
+}}"""
     fake_requests.post(
-        "http://localhost/v2/service_plan_visibilities", text=response_body
+        "http://localhost/v3/service_plans/foo/visibility", text=response_body
     )
     res = cf.enable_plan_for_org("foo", "bar", fake_cf_client)
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert last_request.url == "http://localhost/v2/service_plan_visibilities"
+    assert last_request.url == "http://localhost/v3/service_plans/foo/visibility"
 
 
 def test_enable_service_plan_2(fake_requests, fake_cf_client):
@@ -48,7 +43,7 @@ def test_enable_service_plan_2(fake_requests, fake_cf_client):
     }
     """
     fake_requests.post(
-        "http://localhost/v2/service_plan_visibilities",
+        "http://localhost/v3/service_plans/foo/visibility",
         text=response_body,
         status_code=400,
     )
@@ -58,22 +53,22 @@ def test_enable_service_plan_2(fake_requests, fake_cf_client):
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert last_request.url == "http://localhost/v2/service_plan_visibilities"
+    assert last_request.url == "http://localhost/v3/service_plans/foo/visibility"
 
 
 def test_disable_service_plan_2(fake_requests, fake_cf_client):
     response_body = ""
     fake_requests.delete(
-        "http://localhost/v2/service_plan_visibilities/new-plan-visibility-guid",
+        "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility/test-org-id",
         text=response_body,
     )
-    res = cf.disable_plan_for_org("new-plan-visibility-guid", fake_cf_client)
+    res = cf.disable_plan_for_org("FAKE-MIGRATION-PLAN-GUID", "test-org-id", fake_cf_client)
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
     assert (
         last_request.url
-        == "http://localhost/v2/service_plan_visibilities/new-plan-visibility-guid"
+        == "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility/test-org-id"
     )
 
 

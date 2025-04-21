@@ -20,7 +20,7 @@ from migrator.models.common import (
     OperationModel,
     OperationState,
     timestamp,
-    blob_or_bytea
+    blob_or_bytea,
 )
 
 convention = {
@@ -34,12 +34,15 @@ convention = {
 metadata = sa.MetaData(naming_convention=convention)
 DomainModel = orm.declarative_base(metadata=metadata)
 
-if config.ENV == 'unit':
+if config.ENV == "unit":
     from sqlalchemy.dialects import sqlite
+
     text_array = sqlite.JSON
 else:
     from sqlalchemy.dialects import postgresql
+
     text_array = postgresql.ARRAY(sa.Text)
+
 
 def db_encryption_key():
     return config.DOMAIN_DATABASE_ENCRYPTION_KEY
