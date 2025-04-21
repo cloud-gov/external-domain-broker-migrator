@@ -20,24 +20,12 @@ def get_cf_client(config):
 
 def enable_plan_for_org(plan_id, org_id, client):
     logger.debug("enabling plan for %s", org_id)
+    orgs = [{"guid": org_id}]
     try:
-        response = client.v3.service_plans.apply_visibility_to_extra_orgs(
-            plan_id, [org_id]
-        )
+        response = client.v3.service_plans.apply_visibility_to_extra_orgs(plan_id, orgs)
     except InvalidStatusCode as e:
         if e.body["error_code"] != "CF-ServicePlanVisibilityAlreadyExists":
             raise e
-
-
-# def get_service_plan_visibility_ids_for_org(plan_id, org_id, client):
-#    logger.debug("getting plan visibilities for %s", org_id)
-#    service_plan_visibilities = client.v2.service_plan_visibilities.list(
-#        service_plan_guid=plan_id, organization_guid=org_id
-#    )
-#    return [
-#        service_plan_visibility["metadata"]["guid"]
-#        for service_plan_visibility in service_plan_visibilities
-#    ]
 
 
 def disable_plan_for_org(plan_id, org_id, client):

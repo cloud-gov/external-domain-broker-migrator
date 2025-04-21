@@ -290,13 +290,8 @@ def test_migration_enables_plan_in_org(
     clean_db, fake_cf_client, fake_requests, migration
 ):
     def service_plan_visibility_matcher(request):
-       # params = request.json()
-       # plan = "FAKE-MIGRATION-PLAN-GUID"
-       # return (
-       #     params["organization_guid"] == "my-org-guid"
-       #     and params["service_plan_guid"] == plan
-       # )
-       return True
+       params = request.json()
+       return (params.get("organizations", [{}])[0].get("guid")== "my-org-guid")
 
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
