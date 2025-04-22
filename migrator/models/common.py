@@ -4,14 +4,17 @@ from typing import Union, Type, List
 
 from migrator.extensions import config
 
-if config.ENV == 'unit':
+if config.ENV == "unit":
     from sqlalchemy.dialects import sqlite
+
     blob_or_bytea = sqlite.BLOB
     timestamp = sqlite.TIMESTAMP
 else:
     from sqlalchemy.dialects import postgresql
+
     blob_or_bytea = postgresql.BYTEA
     timestamp = postgresql.TIMESTAMP
+
 
 class Action(str, Enum):
     RENEW = "renew"

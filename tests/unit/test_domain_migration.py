@@ -155,23 +155,12 @@ def test_domain_migration_migrates(
     }
 
     create_service_plan_visibility_response_body = """
-    {
-        "metadata": {
-            "guid": "new-plan-visibility-guid",
-            "url": "/v2/service_plan_visibilities/new-plan-visibility-guid",
-            "created_at": "2016-06-08T16:41:31Z",
-            "updated_at": "2016-06-08T16:41:26Z"
-        },
-        "entity": {
-            "service_plan_guid": "foo",
-            "organization_guid": "bar",
-            "service_plan_url": "/v2/service_plans/foo",
-            "organization_url": "/v2/organizations/bar"
-        }
-    }
+{
+  "type": "organization"
+}
     """
     fake_requests.post(
-        "http://localhost/v2/service_plan_visibilities",
+        "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility",
         text=create_service_plan_visibility_response_body,
     )
 
@@ -357,37 +346,9 @@ def test_domain_migration_migrates(
         text=service_instance_update_check_response_body,
     )
 
-    service_visibilities_response = """
-    {
-       "total_results": 1,
-       "total_pages": 1,
-       "prev_url": null,
-       "next_url": null,
-       "resources": [
-            {
-                "metadata": {
-                    "guid": "my-service-plan-visibility",
-                    "url": "/v2/service_plan_visibilities/my-service-plan-visibility",
-                    "created_at": "2021-02-22T21:15:57Z",
-                    "updated_at": "2021-02-22T21:15:57Z"
-                },
-                "entity": {
-                    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-                    "organization_guid": "my-org-guid",
-                    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-                    "organization_url": "/v2/organizations/my-org-guid"
-                }
-            }
-       ]
-    }
-    """
-    fake_requests.get(
-        "http://localhost/v2/service_plan_visibilities?q=organization_guid:my-org-id&q=service_plan_guid:FAKE-MIGRATION-PLAN-GUID",
-        text=service_visibilities_response,
-    )
     response_body = ""
     fake_requests.delete(
-        "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility",
+        "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility/my-org-id",
         text=response_body,
     )
 
@@ -508,7 +469,7 @@ def test_domain_migration_migrates(
     # enable service plan
     assert (
         fake_requests.request_history[0].url
-        == "http://localhost/v2/service_plan_visibilities"
+        == "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility"
     )
     assert fake_requests.request_history[0].method == "POST"
 
@@ -539,38 +500,31 @@ def test_domain_migration_migrates(
     )
     assert fake_requests.request_history[4].method == "GET"
 
-    # find service plan visibility
-    assert (
-        fake_requests.request_history[5].url
-        == "http://localhost/v2/service_plan_visibilities?q=organization_guid%3Amy-org-id&q=service_plan_guid%3AFAKE-MIGRATION-PLAN-GUID"
-    )
-    assert fake_requests.request_history[5].method == "GET"
-
     # delete service plan visibility
     assert (
-        fake_requests.request_history[6].url
-        == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
+        fake_requests.request_history[5].url
+        == "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility/my-org-id"
     )
-    assert fake_requests.request_history[6].method == "DELETE"
+    assert fake_requests.request_history[5].method == "DELETE"
 
     # purge old instance
     assert (
-        fake_requests.request_history[7].url
+        fake_requests.request_history[6].url
         == "http://localhost/v2/service_instances/asdf-asdf?purge=true"
     )
-    assert fake_requests.request_history[7].method == "DELETE"
+    assert fake_requests.request_history[6].method == "DELETE"
 
     # rename new instance
-    assert fake_requests.request_history[8].method == "PUT"
+    assert fake_requests.request_history[7].method == "PUT"
     assert (
-        fake_requests.request_history[8].url
+        fake_requests.request_history[7].url
         == "http://localhost/v2/service_instances/my-migrator-instance?accepts_incomplete=true"
     )
 
     # check rename status
-    assert fake_requests.request_history[9].method == "GET"
+    assert fake_requests.request_history[8].method == "GET"
     assert (
-        fake_requests.request_history[9].url
+        fake_requests.request_history[8].url
         == "http://localhost/v2/service_instances/my-migrator-instance"
     )
 

@@ -290,34 +290,25 @@ def test_migration_enables_plan_in_org(
     clean_db, fake_cf_client, fake_requests, migration
 ):
     def service_plan_visibility_matcher(request):
-        params = request.json()
-        plan = "FAKE-MIGRATION-PLAN-GUID"
-        return (
-            params["organization_guid"] == "my-org-guid"
-            and params["service_plan_guid"] == plan
-        )
+       params = request.json()
+       return (params.get("organizations", [{}])[0].get("guid")== "my-org-guid")
 
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
     response_body = """
 {
-  "metadata": {
-    "guid": "my-service-plan-visibility",
-    "url": "/v2/service_plan_visibilities/my-service-plan-visibility",
-    "created_at": "2016-06-08T16:41:31Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "organization_guid": "my-org-guid",
-    "service_plan_url": "/v2/service_plans/ab5780a9-ac8e-4412-9496-4512e865011a",
-    "organization_url": "/v2/organizations/my-org-guid"
-  }
+  "type": "organization",
+  "organizations": [
+    {
+      "guid": "my-org-id",
+      "name": "other_org"
+    }
+  ]
 }
     """
     fake_requests.post(
-        "http://localhost/v2/service_plan_visibilities",
+        "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility",
         text=response_body,
         additional_matcher=service_plan_visibility_matcher,
     )
@@ -326,7 +317,7 @@ def test_migration_enables_plan_in_org(
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert last_request.url == "http://localhost/v2/service_plan_visibilities"
+    assert last_request.url == "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility"
 
 
 def test_migration_disables_plan_in_org(
@@ -335,38 +326,9 @@ def test_migration_disables_plan_in_org(
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
-    response_body_get = """
-{
-   "total_results": 1,
-   "total_pages": 1,
-   "prev_url": null,
-   "next_url": null,
-   "resources": [
-      {
-         "metadata": {
-            "guid": "my-service-plan-visibility",
-            "url": "/v2/service_plan_visibilities/my-service-plan-visibility",
-            "created_at": "2021-02-22T21:15:57Z",
-            "updated_at": "2021-02-22T21:15:57Z"
-         },
-         "entity": {
-            "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-            "organization_guid": "my-org-guid",
-            "service_plan_url": "/v2/service_plans/FAKE-MIGRATION-PLAN-GUID",
-            "organization_url": "/v2/organizations/my-org-guid"
-         }
-      }
-   ]
-}
-    """
-    fake_requests.get(
-        "http://localhost/v2/service_plan_visibilities?q=organization_guid:my-org-guid&q=service_plan_guid:FAKE-MIGRATION-PLAN-GUID",
-        text=response_body_get,
-    )
-
     response_body_delete = ""
     fake_requests.delete(
-        "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility",
+        "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility/my-org-guid",
         text=response_body_delete,
     )
 
@@ -376,7 +338,7 @@ def test_migration_disables_plan_in_org(
     last_request = fake_requests.request_history[-1]
     assert (
         last_request.url
-        == "http://localhost/v2/service_plan_visibilities/my-service-plan-visibility"
+        == "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility/my-org-guid"
     )
 
 
