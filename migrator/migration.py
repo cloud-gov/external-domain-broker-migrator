@@ -143,7 +143,7 @@ class Migration:
 
     def create_bare_migrator_instance_in_org_space(self):
         logger.debug("creating bare instance for %s", self.instance_id)
-        instance_info = cf.create_bare_migrator_service_instance_in_space(
+        job_id = cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
             config.MIGRATION_PLAN_ID,
             f"migrating-instance-{self.instance_name}",
@@ -151,9 +151,8 @@ class Migration:
             self.client,
         )
 
-        self.external_domain_broker_service_instance = instance_info["guid"]
-
-        self.check_instance_status()
+        guid = self.wait_for_instance_create(job_id)
+        self.external_domain_broker_service_instance = guid
 
     def upsert_dns(self):
         logger.debug("upserting DNS for %s", self.instance_id)
@@ -222,24 +221,8 @@ class Migration:
 
         raise Exception("Checking migrator service instance timed out.")
 
-    def check_instance_status(self):
-        retries = config.SERVICE_CHANGE_RETRY_COUNT
-
-        while retries:
-            status = cf.get_migrator_service_instance_status(
-                self.external_domain_broker_service_instance, self.client
-            )
-
-            if status == "succeeded":
-                return
-
-            if status == "failed":
-                raise Exception("Creation of migrator service instance failed.")
-
-            retries -= 1
-            time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
-
-        raise Exception("Checking migrator service instance timed out.")
+    def wait_for_instance_create(self, job_id):
+        return cf.wait_for_service_instance_ready(job_id, self.client)
 
     def purge_old_instance(self):
         cf.purge_service_instance(self.route.instance_id, self.client)

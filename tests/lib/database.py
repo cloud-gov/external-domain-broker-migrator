@@ -7,8 +7,6 @@ from migrator.models.domain import metadata as domain_meta
 from migrator.extensions import config
 
 
-
-
 @pytest.fixture
 def clean_db():
     if config.ENV == "unit":
