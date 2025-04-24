@@ -57,24 +57,30 @@ def create_bare_migrator_service_instance_in_space(
     space_id, plan_id, instance_name, domains, client
 ):
     logger.debug("creating service instance for space %s", space_id)
-    response = client.v2.service_instances.create(
+
+    create_response = client.v3.service_instances.create(
         space_guid=space_id,
-        instance_name=instance_name,
-        plan_guid=plan_id,
-        accepts_incomplete=True,
+        service_plan_guid=plan_id,
+        name=instance_name,
         parameters=dict(domains=domains),
     )
-    return {
-        "guid": response["metadata"]["guid"],
-        "state": response["entity"]["last_operation"]["state"],
-        "type": response["entity"]["last_operation"]["type"],
-    }
+    job_link = create_response["links"]["job"]["href"]
+    job_id = job_link.split("/")[-1]
+    return job_id
 
 
 def get_migrator_service_instance_status(instance_id, client):
     logger.debug("polling service instance status for instance %s", instance_id)
     response = client.v2.service_instances.get(instance_id)
     return response["entity"]["last_operation"]["state"]
+
+
+def wait_for_service_instance_ready(job_id, client):
+    logger.debug("polling service instance status for instance %s", job_id)
+    response = client.v3.jobs.wait_for_job_completion(job_id)
+    service_instance_link = response["links"]["service_instances"]["href"]
+    service_instance_id = service_instance_link.split("/")[-1]
+    return service_instance_id
 
 
 def update_existing_cdn_domain_service_instance(

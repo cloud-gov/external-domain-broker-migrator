@@ -4,6 +4,7 @@ black
 flake8
 pip-tools
 pytest
+pytest-mock
 pytest-profiling
 pytest-watch
 requests-mock

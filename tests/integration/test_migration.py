@@ -290,8 +290,8 @@ def test_migration_enables_plan_in_org(
     clean_db, fake_cf_client, fake_requests, migration
 ):
     def service_plan_visibility_matcher(request):
-       params = request.json()
-       return (params.get("organizations", [{}])[0].get("guid")== "my-org-guid")
+        params = request.json()
+        return params.get("organizations", [{}])[0].get("guid") == "my-org-guid"
 
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
@@ -317,7 +317,10 @@ def test_migration_enables_plan_in_org(
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert last_request.url == "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility"
+    assert (
+        last_request.url
+        == "http://localhost/v3/service_plans/FAKE-MIGRATION-PLAN-GUID/visibility"
+    )
 
 
 def test_migration_disables_plan_in_org(
@@ -343,293 +346,31 @@ def test_migration_disables_plan_in_org(
 
 
 def test_create_bare_migrator_instance_in_org_space_success(
-    clean_db, fake_cf_client, fake_requests, migration
+    clean_db, fake_cf_client, migration, mocker
 ):
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
-    response_body_create_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    fake_requests.post(
-        "http://localhost/v2/service_instances", text=response_body_create_instance
+    assert migration.external_domain_broker_service_instance is None
+    create_mocker = mocker.patch(
+        "migrator.migration.cf.create_bare_migrator_service_instance_in_space",
+        return_value="my-job",
     )
-
-    response_body_check_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "succeeded",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-
-    fake_requests.get(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_check_instance,
+    wait_mocker = mocker.patch(
+        "migrator.migration.cf.wait_for_service_instance_ready",
+        return_value="my-instance-id",
     )
-
     migration.create_bare_migrator_instance_in_org_space()
-
-    assert fake_requests.called
-    last_request = fake_requests.request_history[-1]
-    assert (
-        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
+    create_mocker.assert_called_once_with(
+        "my-space-guid",
+        "FAKE-MIGRATION-PLAN-GUID",
+        "migrating-instance-my-old-cdn",
+        ["example.gov"],
+        fake_cf_client,
     )
+    wait_mocker.assert_called_once_with("my-job", fake_cf_client)
 
-
-def test_create_bare_migrator_instance_in_org_space_failure(
-    clean_db, fake_cf_client, fake_requests, migration
-):
-    migration._space_id = "my-space-guid"
-    migration._org_id = "my-org-guid"
-
-    response_body_create_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    fake_requests.post(
-        "http://localhost/v2/service_instances", text=response_body_create_instance
-    )
-
-    response_body_check_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "failed",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-
-    fake_requests.get(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_check_instance,
-    )
-
-    with pytest.raises(Exception):
-        migration.create_bare_migrator_instance_in_org_space()
-
-    assert fake_requests.called
-    last_request = fake_requests.request_history[-1]
-    assert (
-        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
-    )
-
-
-def test_create_bare_migrator_instance_in_org_space_timeout_failure(
-    clean_db, fake_cf_client, fake_requests, migration
-):
-    migration._space_id = "my-space-guid"
-    migration._org_id = "my-org-guid"
-
-    response_body_create_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    fake_requests.post(
-        "http://localhost/v2/service_instances", text=response_body_create_instance
-    )
-
-    response_body_check_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-
-    fake_requests.get(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_check_instance,
-    )
-
-    with pytest.raises(Exception):
-        migration.create_bare_migrator_instance_in_org_space()
-
-    assert fake_requests.called
-    last_request = fake_requests.request_history[-1]
-    assert (
-        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
-    )
-
-    # one for the name fetch, one for the post, 2 for the status checks
-    assert len(fake_requests.request_history) == 4
+    assert migration.external_domain_broker_service_instance == "my-instance-id"
 
 
 def test_migration_renames_instance(clean_db, fake_cf_client, migration, fake_requests):
