@@ -1,5 +1,6 @@
 import datetime
 
+from cloudfoundry_client.errors import InvalidStatusCode
 import pytest
 
 from migrator.migration import (
@@ -37,45 +38,13 @@ def test_find_instances(clean_db):
     assert instances[1].state == "provisioned"
 
 
-def test_get_migrations(clean_db, fake_cf_client, fake_requests):
-    # instances that should work
-    dont_care_instance_response_body = """ {
-        "entity": {
-          "space_guid": "my-space-guid",
-          "name": "my-instance-name"
-        }
-    } """
+def test_get_migrations(clean_db, fake_cf_client, mocker):
 
-    # instance that should not work
-    not_found_response = """
-    {
-        "description": "The service instance could not be found: nope",
-        "error_code": "CF-ServiceInstanceNotFound",
-        "code": 60004
-    }"""
-    fake_requests.get(
-        "http://localhost/v2/service_instances/alb-1234",
-        text=dont_care_instance_response_body,
-    )
-    fake_requests.get(
-        "http://localhost/v2/service_instances/alb-5678",
-        text=dont_care_instance_response_body,
-    )
-    fake_requests.get(
-        "http://localhost/v2/service_instances/cdn-1234",
-        text=dont_care_instance_response_body,
-    )
-    fake_requests.get(
-        "http://localhost/v2/service_instances/cdn-5678",
-        text=dont_care_instance_response_body,
-    )
-
-    # blow up on this one
-    fake_requests.get(
-        "http://localhost/v2/service_instances/bad-404",
-        status_code=404,
-        reason="Not Found",
-        text=not_found_response,
+    good_result = dict(entity=dict(name="my-old-cdn"))
+    bad_result = InvalidStatusCode("404", "not here")
+    get_instance_mock = mocker.patch(
+        "migrator.migration.cf.get_instance_data",
+        side_effect=[good_result, good_result, good_result, good_result, bad_result],
     )
 
     domain_route0 = DomainRoute()
@@ -104,33 +73,14 @@ def test_get_migrations(clean_db, fake_cf_client, fake_requests):
     clean_db.commit()
     migrations = find_migrations(clean_db, fake_cf_client)
     assert len(migrations) == 4
+    assert get_instance_mock.call_count == 5
 
 
-def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests):
-    # these stubs are just so we don't blow up later
-    dont_care_instance_response_body = """ {
-        "entity": {
-          "space_guid": "my-space-guid",
-          "name": "my-instance-name"
-        }
-    } """
-    fake_requests.get(
-        "http://localhost/v2/service_instances/alb-1234",
-        text=dont_care_instance_response_body,
+def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests, mocker):
+    good_result = dict(entity=dict(name="my-old-cdn"))
+    get_instance_mock = mocker.patch(
+        "migrator.migration.cf.get_instance_data", return_value=good_result
     )
-    fake_requests.get(
-        "http://localhost/v2/service_instances/alb-5678",
-        text=dont_care_instance_response_body,
-    )
-    fake_requests.get(
-        "http://localhost/v2/service_instances/cdn-1234",
-        text=dont_care_instance_response_body,
-    )
-    fake_requests.get(
-        "http://localhost/v2/service_instances/cdn-5678",
-        text=dont_care_instance_response_body,
-    )
-    # end stubs
 
     domain_route0 = DomainRoute()
     domain_route0.state = "provisioned"
@@ -152,6 +102,7 @@ def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests):
     migration = migration_for_instance_id("alb-5678", clean_db, fake_cf_client)
     assert isinstance(migration, DomainMigration)
     assert migration.route.instance_id == "alb-5678"
+    get_instance_mock.assert_called_once_with("alb-5678", fake_cf_client)
 
 
 def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
@@ -212,78 +163,43 @@ def test_migration_create_internal_dns(clean_db, route53, fake_cf_client, migrat
     migration.upsert_dns()
 
 
-def test_migration_gets_space_id(clean_db, fake_cf_client, fake_requests, migration):
-    response_body = """ {
-        "metadata": {
-          "guid": "asdf-asdf",
-          "url": "/v2/service_instances/asdf-asdf",
-          "created_at": "2016-06-08T16:41:29Z",
-          "updated_at": "2016-06-08T16:41:26Z"
-        },
-        "entity": {
-          "name": "name-1508",
-          "service_guid": "a14baddf-1ccc-5299-0152-ab9s49de4422",
-          "service_plan_guid": "779d2df0-9cdd-48e8-9781-ea05301cedb1",
-          "space_guid": "my-space-guid",
-          "type": "managed_service_instance",
-          "space_url": "/v2/spaces/my-space-guid",
-          "service_url": "/v2/services/a14baddf-1ccc-5299-0152-ab9s49de4422",
-          "service_plan_url": "/v2/service_plans/779d2df0-9cdd-48e8-9781-ea05301cedb1",
-          "service_bindings_url": "/v2/service_instances/asdf-asdf/service_bindings",
-          "service_keys_url": "/v2/service_instances/asdf-asdf/service_keys",
-          "routes_url": "/v2/service_instances/asdf-asdf/routes",
-          "shared_from_url": "/v2/service_instances/asdf-asdf/shared_from",
-          "shared_to_url": "/v2/service_instances/asdf-asdf/shared_to",
-          "service_instance_parameters_url": "/v2/service_instances/asdf-asdf/parameters"
-        }
-    } """
-    fake_requests.get(
-        "http://localhost/v2/service_instances/asdf-asdf", text=response_body
+def test_migration_gets_space_id(clean_db, fake_cf_client, migration, mocker):
+    instance_fetch_mock = mocker.patch(
+        "migrator.migration.cf.get_space_id_for_service_instance_id",
+        return_value="my-space-guid",
     )
+    # check state before, so we know we're doing _something_
+    assert migration._space_id is None
+    # make sure we get the right value
     assert migration.space_id == "my-space-guid"
+    # get the value after to make sure we'll remember it
+    assert migration._space_id is not None
+    # try a few more times
+    assert migration.space_id == "my-space-guid"
+    assert migration.space_id == "my-space-guid"
+    assert migration.space_id == "my-space-guid"
+    # assert we only called the client once
+    instance_fetch_mock.assert_called_once_with("asdf-asdf", fake_cf_client)
 
 
-def test_migration_gets_org_id(clean_db, fake_cf_client, fake_requests, migration):
-    response_body = """
-    {
-  "guid": "my-space-guid",
-  "created_at": "2017-02-01T01:33:58Z",
-  "updated_at": "2017-02-01T01:33:58Z",
-  "name": "my-space",
-  "relationships": {
-    "organization": {
-      "data": {
-        "guid": "my-org-guid"
-      }
-    },
-    "quota": {
-      "data": null
-    }
-  },
-  "links": {
-    "self": {
-      "href": "http://localhost/v3/spaces/my-space-guid"
-    },
-    "features": {
-      "href": "http://localhost/v3/spaces/my-space-guid/features"
-    },
-    "organization": {
-      "href": "http://localhost/v3/organizations/my-org-guid"
-    },
-    "apply_manifest": {
-      "href": "http://localhost/v3/spaces/my-space-guid/actions/apply_manifest",
-      "method": "POST"
-    }
-  },
-  "metadata": {
-    "labels": {},
-    "annotations": {}
-  }
-}
-"""
-    fake_requests.get("http://localhost/v3/spaces/my-space-guid", text=response_body)
+def test_migration_gets_org_id(clean_db, fake_cf_client, migration, mocker):
+    instance_fetch_mock = mocker.patch(
+        "migrator.migration.cf.get_org_id_for_space_id", return_value="my-org-guid"
+    )
+    # prime space id, so we only have one call to think about
     migration._space_id = "my-space-guid"
+    # check state before, so we know we're doing _something_
+    assert migration._org_id is None
+    # make sure we get the right value
     assert migration.org_id == "my-org-guid"
+    # get the value after to make sure we'll remember it
+    assert migration._org_id is not None
+    # try a few more times
+    assert migration.org_id == "my-org-guid"
+    assert migration.org_id == "my-org-guid"
+    assert migration.org_id == "my-org-guid"
+    # assert we only called the client once
+    instance_fetch_mock.assert_called_once_with("my-space-guid", fake_cf_client)
 
 
 def test_migration_enables_plan_in_org(
@@ -373,109 +289,21 @@ def test_create_bare_migrator_instance_in_org_space_success(
     assert migration.external_domain_broker_service_instance == "my-instance-id"
 
 
-def test_migration_renames_instance(clean_db, fake_cf_client, migration, fake_requests):
-    # the migration fixture gives us the name "my-old-cdn"
-    def name_matcher(request):
-        assert request.json().get("name") == "my-old-cdn"
-        assert request.json().get("parameters") == {}
-        assert request.json().get("plan_guid") == None
-        return True
-
-    response_body_update_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": { },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    fake_requests.put(
-        "http://localhost/v2/service_instances", text=response_body_update_instance
+def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker):
+    update_service_instance_mock = mocker.patch(
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance"
     )
-
-    response_body_check_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "my-old-cdn",
-    "credentials": { },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "succeeded",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-
-    fake_requests.put(
-        "http://localhost/v2/service_instances/migrator-instance-id?accepts_incomplete=true",
-        text=response_body_update_instance,
-        additional_matcher=name_matcher,
+    instance_status_mock = mocker.patch(
+        "migrator.migration.cf.get_migrator_service_instance_status",
+        return_value="succeeded",
     )
-
-    fake_requests.get(
-        "http://localhost/v2/service_instances/migrator-instance-id",
-        text=response_body_check_instance,
-    )
-
     migration.external_domain_broker_service_instance = "migrator-instance-id"
     migration.update_instance_name()
+    update_service_instance_mock.assert_called_once_with(
+        "migrator-instance-id", {}, fake_cf_client, new_instance_name="my-old-cdn"
+    )
 
-    assert fake_requests.request_history[-2].method == "PUT"
-    assert (
-        fake_requests.request_history[-2].url
-        == "http://localhost/v2/service_instances/migrator-instance-id?accepts_incomplete=true"
-    )
-    assert fake_requests.request_history[-1].method == "GET"
-    assert (
-        fake_requests.request_history[-1].url
-        == "http://localhost/v2/service_instances/migrator-instance-id"
-    )
+    instance_status_mock.assert_called_once_with("migrator-instance-id", fake_cf_client)
 
 
 def test_migration_marks_route_migrated(clean_db, fake_cf_client, migration):
