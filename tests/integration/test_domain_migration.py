@@ -128,11 +128,8 @@ def test_domain_migration_migrates(
 
     # these two functions are called more than once. The way mocking works means we define them once then check their calls later
     update_service_instance_mock = mocker.patch(
-        "migrator.migration.cf.update_existing_cdn_domain_service_instance"
-    )
-    update_instance_wait_mock = mocker.patch(
-        "migrator.migration.cf.get_migrator_service_instance_status",
-        return_value="succeeded",
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance",
+        return_value="my-second-job"
     )
 
     disable_service_mock = mocker.patch("migrator.migration.cf.disable_plan_for_org")
@@ -157,7 +154,7 @@ def test_domain_migration_migrates(
     )
 
     # wait for service instance
-    wait_mock.assert_called_once_with("my-job", fake_cf_client)
+    wait_mock.assert_has_calls([call("my-job", fake_cf_client),call("my-second-job", fake_cf_client)])
 
     # update service instance
     update_service_instance_mock.assert_has_calls(
@@ -184,14 +181,6 @@ def test_domain_migration_migrates(
         ]
     )
 
-    update_instance_wait_mock.assert_has_calls(
-        [
-            # wait for instance type change
-            call("my-instance-id", fake_cf_client),
-            # wait for instance rename
-            call("my-instance-id", fake_cf_client),
-        ]
-    )
 
     # delete service plan visibility
     disable_service_mock.assert_called_once_with(

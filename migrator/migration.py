@@ -2,6 +2,7 @@ import logging
 import time
 
 from cloudfoundry_client.errors import InvalidStatusCode
+from cloudfoundry_client.v3.jobs import JobTimeout
 
 from migrator import cf
 from migrator.db import session_handler
@@ -222,19 +223,22 @@ class Migration:
         raise Exception("Checking migrator service instance timed out.")
 
     def wait_for_instance_create(self, job_id):
-        return cf.wait_for_service_instance_ready(job_id, self.client)
+        try:
+            return cf.wait_for_service_instance_ready(job_id, self.client)
+        except JobTimeout as e:
+            raise Exception("Checking migrator service instance timed out.") from e
 
     def purge_old_instance(self):
         cf.purge_service_instance(self.route.instance_id, self.client)
 
     def update_instance_name(self):
-        cf.update_existing_cdn_domain_service_instance(
+        job_id = cf.update_existing_cdn_domain_service_instance(
             self.external_domain_broker_service_instance,
             {},
             self.client,
             new_instance_name=self.instance_name,
         )
-        self.check_instance_status()
+        return self.wait_for_instance_create(job_id)
 
     def mark_complete(self):
         self.route.state = "migrated"
@@ -377,14 +381,14 @@ class CdnMigration(Migration):
             "domain_internal": self.domain_internal,
         }
 
-        cf.update_existing_cdn_domain_service_instance(
+        job_id = cf.update_existing_cdn_domain_service_instance(
             self.external_domain_broker_service_instance,
             params,
             self.client,
             new_plan_guid=config.CDN_PLAN_ID,
         )
 
-        self.check_instance_status()
+        self.wait_for_instance_create(job_id)
 
     def _migrate(self):
         self.enable_migration_service_plan()
@@ -439,14 +443,14 @@ class DomainMigration(Migration):
             "hosted_zone_id": config.ALB_HOSTED_ZONE_ID,
         }
 
-        cf.update_existing_cdn_domain_service_instance(
+        job_id = cf.update_existing_cdn_domain_service_instance(
             self.external_domain_broker_service_instance,
             params,
             self.client,
             new_plan_guid=config.DOMAIN_PLAN_ID,
         )
 
-        self.check_instance_status()
+        self.wait_for_instance_create(job_id)
 
     def _migrate(self):
         self.enable_migration_service_plan()

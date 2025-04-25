@@ -291,11 +291,12 @@ def test_create_bare_migrator_instance_in_org_space_success(
 
 def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker):
     update_service_instance_mock = mocker.patch(
-        "migrator.migration.cf.update_existing_cdn_domain_service_instance"
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance",
+        return_value="my-job-id"
     )
     instance_status_mock = mocker.patch(
-        "migrator.migration.cf.get_migrator_service_instance_status",
-        return_value="succeeded",
+        "migrator.migration.cf.wait_for_service_instance_ready",
+        return_value="migrator-instance-id",
     )
     migration.external_domain_broker_service_instance = "migrator-instance-id"
     migration.update_instance_name()
@@ -303,7 +304,7 @@ def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker)
         "migrator-instance-id", {}, fake_cf_client, new_instance_name="my-old-cdn"
     )
 
-    instance_status_mock.assert_called_once_with("migrator-instance-id", fake_cf_client)
+    instance_status_mock.assert_called_once_with("my-job-id", fake_cf_client)
 
 
 def test_migration_marks_route_migrated(clean_db, fake_cf_client, migration):

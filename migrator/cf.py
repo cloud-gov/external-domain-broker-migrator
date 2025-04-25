@@ -37,8 +37,8 @@ def disable_plan_for_org(plan_id, org_id, client):
 
 def get_space_id_for_service_instance_id(instance_id, client):
     logger.debug("getting space_id for instance %s", instance_id)
-    response = client.v2.service_instances.get(instance_id)
-    return response["entity"]["space_guid"]
+    response = client.v3.service_instances.get(instance_id)
+    return response["relationships"]["space"]["data"]["guid"]
 
 
 def get_org_id_for_space_id(space_id, client):
@@ -69,15 +69,17 @@ def create_bare_migrator_service_instance_in_space(
     return job_id
 
 
-def get_migrator_service_instance_status(instance_id, client):
-    logger.debug("polling service instance status for instance %s", instance_id)
-    response = client.v2.service_instances.get(instance_id)
-    return response["entity"]["last_operation"]["state"]
+#def get_migrator_service_instance_status(instance_id, client):
+#    logger.debug("polling service instance status for instance %s", instance_id)
+#    response = client.v2.service_instances.get(instance_id)
+#    return response["entity"]["last_operation"]["state"]
 
 
 def wait_for_service_instance_ready(job_id, client):
     logger.debug("polling service instance status for instance %s", job_id)
     response = client.v3.jobs.wait_for_job_completion(job_id)
+    if response['state'] != "COMPLETE":
+        raise Exception(f"Job failed {response}")
     service_instance_link = response["links"]["service_instances"]["href"]
     service_instance_id = service_instance_link.split("/")[-1]
     return service_instance_id
@@ -87,13 +89,15 @@ def update_existing_cdn_domain_service_instance(
     instance_id, params, client, *, new_instance_name=None, new_plan_guid=None
 ):
     logger.debug("updating service instance %s", instance_id)
-    return client.v2.service_instances.update(
+    update_response = client.v3.service_instances.update(
         instance_id,
         parameters=params,
-        instance_name=new_instance_name,
-        plan_guid=new_plan_guid,
-        accepts_incomplete=True,
+        name=new_instance_name,
+        service_plan=new_plan_guid,
     )
+    job_link = update_response["links"]["job"]["href"]
+    job_id = job_link.split("/")[-1]
+    return job_id
 
 
 def purge_service_instance(instance_id, client):
