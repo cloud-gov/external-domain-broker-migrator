@@ -76,47 +76,68 @@ def test_disable_service_plan_2(fake_requests, fake_cf_client):
 
 def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
     response_body = """
-    {
-  "metadata": {
-    "guid": "some-instance-id",
-    "url": "/v2/service_instances/some-instance-id",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
+   {
+  "guid": "asdf-asdf",
+  "created_at": "2020-03-10T15:49:29Z",
+  "updated_at": "2020-03-10T15:49:29Z",
+  "name": "my-managed-instance",
+  "tags": [],
+  "type": "managed",
+  "maintenance_info": {
+    "version": "1.0.0"
   },
-  "entity": {
-    "name": "name-1508",
-    "service_guid": "a14baddf-1ccc-5299-0152-ab9s49de4422",
-    "service_plan_guid": "779d2df0-9cdd-48e8-9781-ea05301cedb1",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "succeeded",
-      "description": "service broker-provided description",
-      "updated_at": "2016-06-08T16:41:29Z",
-      "created_at": "2016-06-08T16:41:29Z"
+  "upgrade_available": false,
+  "dashboard_url": "https://service-broker.example.org/dashboard",
+  "last_operation": {
+    "type": "create",
+    "state": "succeeded",
+    "description": "Operation succeeded",
+    "updated_at": "2020-03-10T15:49:32Z",
+    "created_at": "2020-03-10T15:49:29Z"
+  },
+  "relationships": {
+    "service_plan": {
+      "data": {
+        "guid": "5358d122-638e-11ea-afca-bf6e756684ac"
+      }
     },
-    "tags": [ ],
-    "maintenance_info": {
-      "version": "2.1.1",
-      "description": "OS image update.Expect downtime."
+    "space": {
+      "data": {
+        "guid": "my-space-guid"
+      }
+    }
+  },
+  "metadata": {
+    "labels": {},
+    "annotations": {}
+  },
+  "links": {
+    "self": {
+      "href": "https://api.example.org/v3/service_instances/asdf-asdf"
     },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_url": "/v2/services/a14baddf-1ccc-5299-0152-ab9s49de4422",
-    "service_plan_url": "/v2/service_plans/779d2df0-9cdd-48e8-9781-ea05301cedb1",
-    "service_bindings_url": "/v2/service_instances/some-instance-id/service_bindings",
-    "service_keys_url": "/v2/service_instances/some-instance-id/service_keys",
-    "routes_url": "/v2/service_instances/some-instance-id/routes",
-    "shared_from_url": "/v2/service_instances/some-instance-id/shared_from",
-    "shared_to_url": "/v2/service_instances/some-instance-id/shared_to",
-    "service_instance_parameters_url": "/v2/service_instances/some-instance-id/parameters"
+    "service_plan": {
+      "href": "https://api.example.org/v3/service_plans/5358d122-638e-11ea-afca-bf6e756684ac"
+    },
+    "space": {
+      "href": "https://api.example.org/v3/spaces/my-space-guid"
+    },
+    "parameters": {
+      "href": "https://api.example.org/v3/service_instances/asdf-asdf/parameters"
+    },
+    "shared_spaces": {
+      "href": "https://api.example.org/v3/service_instances/asdf-asdf/relationships/shared_spaces"
+    },
+    "service_credential_bindings": {
+      "href": "https://api.example.org/v3/service_credential_bindings?service_instance_guids=asdf-asdf"
+    },
+    "service_route_bindings": {
+      "href": "https://api.example.org/v3/service_route_bindings?service_instance_guids=asdf-asdf"
+    }
   }
 }
 """
     fake_requests.get(
-        "http://localhost/v2/service_instances/asdf-asdf", text=response_body
+        "http://localhost/v3/service_instances/asdf-asdf", text=response_body
     )
     assert (
         cf.get_space_id_for_service_instance_id(migration.instance_id, fake_cf_client)
@@ -125,7 +146,7 @@ def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
-    assert last_request.url == "http://localhost/v2/service_instances/asdf-asdf"
+    assert last_request.url == "http://localhost/v3/service_instances/asdf-asdf"
 
 
 def test_get_org_id_for_space_id(fake_cf_client, fake_requests):
@@ -391,75 +412,202 @@ def test_wait_for_instance_ready(fake_cf_client, fake_requests):
     )
 
     assert (
-        cf.wait_for_service_instance_ready("create-instance-job-id", fake_cf_client)
+        cf.wait_for_service_instance_create("create-instance-job-id", fake_cf_client)
         == "my-service-instance-id"
     )
 
 
-def update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):
-    response_body = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:30Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-      "creds-key-41": "creds-val-41"
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:30Z",
-      "created_at": "2016-06-08T16:41:30Z"
-    },
-    "tags": [
-
-    ],
-    "maintenance_info": {
-      "version": "2.1.0",
-      "description": "OS image update.\nExpect downtime."
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
+def test_wait_for_job_complete(fake_cf_client, fake_requests):
+    job_response_body_processing = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-guid"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "PROCESSING",
+      "updated_at": "2025-04-21T23:35:27Z",
+      "warnings": []
+    }
+    """
+    job_response_body_polling = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-id"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "POLLING",
+      "updated_at": "2025-04-21T23:35:29Z",
+      "warnings": []
+    }
+    """
+    job_response_body_complete = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-id"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "COMPLETE",
+      "updated_at": "2025-04-21T23:41:31Z",
+      "warnings": []
+    }
     """
 
-    fake_requests.put(
-        "http://localhost/v2/service_instances/my-migrator-instance", text=response_body
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_processing,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_polling,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_polling,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_complete,
+    )
+
+    response = cf.wait_for_job_complete("create-instance-job-id", fake_cf_client)
+    assert response["state"] == "COMPLETE"
+    assert response["links"]["service_instances"]["href"] == "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+
+
+def test_wait_for_job_complete_but_it_fails(fake_cf_client, fake_requests):
+    job_response_body_processing = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-guid"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "PROCESSING",
+      "updated_at": "2025-04-21T23:35:27Z",
+      "warnings": []
+    }
+    """
+    job_response_body_polling = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-id"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "POLLING",
+      "updated_at": "2025-04-21T23:35:29Z",
+      "warnings": []
+    }
+    """
+    job_response_body_failed = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-id"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "FAILED",
+      "updated_at": "2025-04-21T23:41:31Z",
+      "warnings": []
+    }
+    """
+
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_processing,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_polling,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_polling,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_failed,
+    )
+
+    with pytest.raises(Exception, match="Job failed"):
+        cf.wait_for_job_complete("create-instance-job-id", fake_cf_client)
+
+
+def test_update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):
+
+    def update_param_matcher(request):
+        json_ = request.json()
+        params = json_.get("parameters", {})
+        # use an assert for pytest
+        assert "param1" in params
+        # return True for requests_mock
+        return True
+
+    fake_requests.patch(
+        "http://localhost/v3/service_instances/my-migrator-instance", text="",
+        headers={"Location": "http://localhost/v3/jobs/job-id"},
+        additional_matcher=update_param_matcher
     )
 
     response = cf.update_existing_cdn_domain_service_instance(
-        "my-space-guid",
-        "739e78F5-a919-46ef-9193-1293cc086c17",
-        "external-domain-broker-migrator",
+        "my-migrator-instance",
+        {
+          "param1": "value1"
+        },
         fake_cf_client,
     )
 
     assert fake_requests.called
     last_request = fake_requests.request_history[-1]
     assert (
-        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
+        last_request.url == "http://localhost/v3/service_instances/my-migrator-instance"
     )
-
-    assert response["guid"] == "my-migrator-instance"
-    assert response["state"] == "in progress"
-    assert response["type"] == "update"
+    assert response == "job-id"
 
 
 def test_purge_service_instance(fake_cf_client, fake_requests):

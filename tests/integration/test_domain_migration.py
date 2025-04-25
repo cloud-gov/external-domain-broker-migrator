@@ -121,18 +121,17 @@ def test_domain_migration_migrates(
         "migrator.migration.cf.create_bare_migrator_service_instance_in_space",
         return_value="my-job",
     )
-    wait_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_service_instance_ready",
+    create_wait_mock = mocker.patch(
+        "migrator.migration.cf.wait_for_service_instance_create",
         return_value="my-instance-id",
     )
-
-    # these two functions are called more than once. The way mocking works means we define them once then check their calls later
     update_service_instance_mock = mocker.patch(
-        "migrator.migration.cf.update_existing_cdn_domain_service_instance"
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance",
+        side_effect=["my-second-job", "my-third-job"]
     )
-    update_instance_wait_mock = mocker.patch(
-        "migrator.migration.cf.get_migrator_service_instance_status",
-        return_value="succeeded",
+    update_wait_mock = mocker.patch(
+        "migrator.migration.cf.wait_for_job_complete",
+        return_value={}, # it's a complex object in reality, but we ignore it
     )
 
     disable_service_mock = mocker.patch("migrator.migration.cf.disable_plan_for_org")
@@ -157,7 +156,7 @@ def test_domain_migration_migrates(
     )
 
     # wait for service instance
-    wait_mock.assert_called_once_with("my-job", fake_cf_client)
+    create_wait_mock.assert_called_once_with("my-job", fake_cf_client)
 
     # update service instance
     update_service_instance_mock.assert_has_calls(
@@ -184,14 +183,11 @@ def test_domain_migration_migrates(
         ]
     )
 
-    update_instance_wait_mock.assert_has_calls(
-        [
-            # wait for instance type change
-            call("my-instance-id", fake_cf_client),
-            # wait for instance rename
-            call("my-instance-id", fake_cf_client),
-        ]
-    )
+    update_wait_mock.assert_has_calls([
+        call("my-second-job", fake_cf_client),
+        call("my-third-job", fake_cf_client)
+    ])
+
 
     # delete service plan visibility
     disable_service_mock.assert_called_once_with(
