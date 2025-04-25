@@ -7,49 +7,18 @@ from migrator.migration import find_active_instances, CdnMigration
 from migrator.models import CdnRoute, CdnCertificate
 
 
-def test_migration_init(clean_db, fake_cf_client, fake_requests):
+def test_migration_init(clean_db, fake_cf_client, mocker):
     route = CdnRoute()
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com,foo.example.com"
     route.dist_id = "some-distribution-id"
-    response_body = """
-{
-  "metadata": {
-    "guid": "asdf-asdf",
-    "url": "/v2/service_instances/asdf-asdf",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "my-old-cdn",
-    "credentials": { },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "succeeded",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    fake_requests.get(
-        "http://localhost/v2/service_instances/asdf-asdf", text=response_body
+    get_instance_mock = mocker.patch(
+        "migrator.migration.cf.get_instance_data",
+        return_value=dict(entity=dict(name="my-old-cdn")),
     )
     cdn_migration = CdnMigration(route, clean_db, fake_cf_client)
+    get_instance_mock.assert_called_once_with("asdf-asdf", fake_cf_client)
 
     assert sorted(cdn_migration.domains) == sorted(["example.com", "foo.example.com"])
     assert cdn_migration.instance_id == "asdf-asdf"
@@ -206,39 +175,7 @@ def test_cloudfront_error_response_to_edb_error_response(input_, expected):
     assert expected == CdnMigration.parse_cloudfront_error_response(input_)
 
 
-def test_update_existing_cdn_domain(
-    clean_db, fake_cf_client, fake_requests, cdn_migration
-):
-    def update_instance_matcher(request):
-        body = request.json()
-        name = body.get("name")
-        service_plan_guid = body.get("service_plan_guid")
-        params = body.get("parameters", {})
-        assert name is None
-        assert service_plan_guid == "FAKE-CDN-PLAN-GUID"
-        assert params["origin"] == "example.gov"
-        assert params["path"] == "/example-gov"
-        assert params["forwarded_cookies"] == ["white-listed-name"]
-        assert params["forward_cookie_policy"] == "whitelist"
-        assert params["forwarded_headers"] == ["white-listed-name-header"]
-        assert params["insecure_origin"] == False
-        assert params["cloudfront_distribution_id"] == "sample-distribution-id"
-        assert (
-            params["cloudfront_distribution_arn"]
-            == "aws:arn:cloudfront:my-cloudfront-distribution"
-        )
-        assert params["iam_server_certificate_name"] == "my-cert-name-0"
-        assert params["iam_server_certificate_id"] == "my-cert-id-0"
-        assert params["iam_server_certificate_arn"] == "my-cert-arn-0"
-        error_config = params["error_responses"]
-        assert error_config.get("500") == "/five-hundred"
-        assert error_config.get("404") == "/four-oh-four"
-
-        # the matcher API from requests_mock actually wants us to return False for a failed match
-        # and True for a good match. We use assertions instead so the error is meaningful, but we
-        # need to return True when we are done anyway
-        return True
-
+def test_update_existing_cdn_domain(clean_db, fake_cf_client, cdn_migration, mocker):
     cdn_migration._space_id = "my-space-guid"
     cdn_migration._org_id = "my-org-guid"
     cdn_migration.external_domain_broker_service_instance = "my-migrator-instance"
@@ -293,99 +230,51 @@ def test_update_existing_cdn_domain(
             },
         },
     }
-    response_body_update_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
 
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    response_body_check_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "succeeded",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-
-    fake_requests.put(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_update_instance,
-        additional_matcher=update_instance_matcher,
+    update_mock = mocker.patch(
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance"
     )
-
-    fake_requests.get(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_check_instance,
+    update_instance_wait_mock = mocker.patch(
+        "migrator.migration.cf.get_migrator_service_instance_status",
+        return_value="succeeded",
     )
 
     cdn_migration.update_existing_cdn_domain()
 
-    assert fake_requests.called
-    last_request = fake_requests.request_history[-1]
-    assert (
-        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
+    update_mock.assert_called_once_with(
+        "my-migrator-instance",
+        {
+            "cloudfront_distribution_arn": "aws:arn:cloudfront:my-cloudfront-distribution",
+            "cloudfront_distribution_id": "sample-distribution-id",
+            "domain_internal": "example.cloudfront.net",
+            "error_responses": {
+                "404": "/four-oh-four",
+                "500": "/five-hundred",
+            },
+            "forward_cookie_policy": "whitelist",
+            "forwarded_cookies": [
+                "white-listed-name",
+            ],
+            "forwarded_headers": [
+                "white-listed-name-header",
+            ],
+            "iam_server_certificate_arn": "my-cert-arn-0",
+            "iam_server_certificate_id": "my-cert-id-0",
+            "iam_server_certificate_name": "my-cert-name-0",
+            "insecure_origin": False,
+            "origin": "example.gov",
+            "path": "/example-gov",
+        },
+        fake_cf_client,
+        new_plan_guid="FAKE-CDN-PLAN-GUID",
+    )
+    update_instance_wait_mock.assert_called_once_with(
+        "my-migrator-instance", fake_cf_client
     )
 
 
 def test_update_existing_cdn_domain_failure(
-    clean_db, fake_cf_client, fake_requests, cdn_migration
+    clean_db, fake_cf_client, cdn_migration, mocker
 ):
     cdn_migration.route.dist_id = "some-distribution-id"
     cdn_migration._space_id = "my-space-guid"
@@ -400,7 +289,7 @@ def test_update_existing_cdn_domain_failure(
                     {
                         "Id": "my-custom-domain-id",
                         "DomainName": "example.gov",
-                        "OriginPath": "example.gov",
+                        "OriginPath": "/example-gov",
                         "S3OriginConfig": None,
                         "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
                     }
@@ -452,103 +341,53 @@ def test_update_existing_cdn_domain_failure(
         "Expiration": datetime.date(2022, 1, 1),
     }
 
-    response_body_update_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    fake_requests.put(
-        "http://localhost/v2/service_instances", text=response_body_update_instance
+    update_mock = mocker.patch(
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance"
+    )
+    update_instance_wait_mock = mocker.patch(
+        "migrator.migration.cf.get_migrator_service_instance_status",
+        return_value="failed",
     )
 
-    response_body_check_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "failed",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-
-    fake_requests.put(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_update_instance,
-    )
-
-    fake_requests.get(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_check_instance,
-    )
-
-    with pytest.raises(Exception):
+    with pytest.raises(
+        Exception, match="Creation of migrator service instance failed."
+    ):
         cdn_migration.update_existing_cdn_domain()
 
-    assert fake_requests.called
-    last_request = fake_requests.request_history[-1]
-    assert (
-        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
+    update_mock.assert_called_once_with(
+        "my-migrator-instance",
+        {
+            "cloudfront_distribution_arn": "aws:arn:cloudfront:my-cloudfront-distribution",
+            "cloudfront_distribution_id": "sample-distribution-id",
+            "domain_internal": "example.cloudfront.net",
+            "error_responses": {
+                "404": "/four-oh-four",
+                "500": "/five-hundred",
+            },
+            "forward_cookie_policy": "whitelist",
+            "forwarded_cookies": [
+                "white-listed-name",
+            ],
+            "forwarded_headers": [
+                "white-listed-name-header",
+            ],
+            "iam_server_certificate_arn": "my-cert-arn-0",
+            "iam_server_certificate_id": "my-cert-id-0",
+            "iam_server_certificate_name": "my-cert-name-0",
+            "insecure_origin": False,
+            "origin": "example.gov",
+            "path": "/example-gov",
+        },
+        fake_cf_client,
+        new_plan_guid="FAKE-CDN-PLAN-GUID",
+    )
+    update_instance_wait_mock.assert_called_once_with(
+        "my-migrator-instance", fake_cf_client
     )
 
 
 def test_update_existing_cdn_domain_timeout_failure(
-    clean_db, fake_cf_client, fake_requests, cdn_migration
+    clean_db, fake_cf_client, cdn_migration, mocker
 ):
     cdn_migration.route.dist_id = "some-distribution-id"
     cdn_migration._space_id = "my-space-guid"
@@ -563,7 +402,7 @@ def test_update_existing_cdn_domain_timeout_failure(
                     {
                         "Id": "my-custom-domain-id",
                         "DomainName": "example.gov",
-                        "OriginPath": "example.gov",
+                        "OriginPath": "/example-gov",
                         "S3OriginConfig": None,
                         "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
                     }
@@ -615,99 +454,58 @@ def test_update_existing_cdn_domain_timeout_failure(
         "Expiration": datetime.date(2022, 1, 1),
     }
 
-    response_body_update_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-    fake_requests.put(
-        "http://localhost/v2/service_instances", text=response_body_update_instance
+    update_mock = mocker.patch(
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance"
     )
 
-    response_body_check_instance = """
-{
-  "metadata": {
-    "guid": "my-migrator-instance",
-    "url": "/v2/service_instances/my-migrator-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "external-domain-broker-migrator",
-    "credentials": {
-
-    },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "update",
-      "state": "in progress",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
-    },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
-  }
-}
-    """
-
-    fake_requests.put(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_update_instance,
+    # with this setup this mock will return "in progess" as many times as we call it
+    # then later we 1: check that we got the expected exception and 2: that we called it the expected number of times
+    update_instance_wait_mock = mocker.patch(
+        "migrator.migration.cf.get_migrator_service_instance_status",
+        return_value="in progress",
     )
 
-    fake_requests.get(
-        "http://localhost/v2/service_instances/my-migrator-instance",
-        text=response_body_check_instance,
-    )
-
-    with pytest.raises(Exception):
+    with pytest.raises(
+        Exception, match="Checking migrator service instance timed out."
+    ):
         cdn_migration.update_existing_cdn_domain()
 
-    assert fake_requests.called
-    last_request = fake_requests.request_history[-1]
-    assert (
-        last_request.url == "http://localhost/v2/service_instances/my-migrator-instance"
+    update_mock.assert_called_once_with(
+        "my-migrator-instance",
+        {
+            "cloudfront_distribution_arn": "aws:arn:cloudfront:my-cloudfront-distribution",
+            "cloudfront_distribution_id": "sample-distribution-id",
+            "domain_internal": "example.cloudfront.net",
+            "error_responses": {
+                "404": "/four-oh-four",
+                "500": "/five-hundred",
+            },
+            "forward_cookie_policy": "whitelist",
+            "forwarded_cookies": [
+                "white-listed-name",
+            ],
+            "forwarded_headers": [
+                "white-listed-name-header",
+            ],
+            "iam_server_certificate_arn": "my-cert-arn-0",
+            "iam_server_certificate_id": "my-cert-id-0",
+            "iam_server_certificate_name": "my-cert-name-0",
+            "insecure_origin": False,
+            "origin": "example.gov",
+            "path": "/example-gov",
+        },
+        fake_cf_client,
+        new_plan_guid="FAKE-CDN-PLAN-GUID",
     )
+    update_instance_wait_mock.assert_has_calls(
+        [
+            call("my-migrator-instance", fake_cf_client),
+            call("my-migrator-instance", fake_cf_client),
+        ]
+    )
+    # make sure we tried the right number of times, which is
+    # config.SERVICE_CHANGE_RETRY_COUNT
+    assert update_instance_wait_mock.call_count == 2
 
 
 def test_migration_migrates_happy_path(
