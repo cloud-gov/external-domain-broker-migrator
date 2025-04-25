@@ -273,7 +273,7 @@ def test_create_bare_migrator_instance_in_org_space_success(
         return_value="my-job",
     )
     wait_mocker = mocker.patch(
-        "migrator.migration.cf.wait_for_service_instance_ready",
+        "migrator.migration.cf.wait_for_service_instance_create",
         return_value="my-instance-id",
     )
     migration.create_bare_migrator_instance_in_org_space()
@@ -295,8 +295,8 @@ def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker)
         return_value="my-job-id"
     )
     instance_status_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_service_instance_ready",
-        return_value="migrator-instance-id",
+        "migrator.migration.cf.wait_for_job_complete",
+        return_value={} # the return is a complex dict, but we ignore it
     )
     migration.external_domain_broker_service_instance = "migrator-instance-id"
     migration.update_instance_name()

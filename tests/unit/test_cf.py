@@ -412,12 +412,93 @@ def test_wait_for_instance_ready(fake_cf_client, fake_requests):
     )
 
     assert (
-        cf.wait_for_service_instance_ready("create-instance-job-id", fake_cf_client)
+        cf.wait_for_service_instance_create("create-instance-job-id", fake_cf_client)
         == "my-service-instance-id"
     )
 
 
-def test_wait_for_instance_ready_but_it_fails(fake_cf_client, fake_requests):
+def test_wait_for_job_complete(fake_cf_client, fake_requests):
+    job_response_body_processing = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-guid"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "PROCESSING",
+      "updated_at": "2025-04-21T23:35:27Z",
+      "warnings": []
+    }
+    """
+    job_response_body_polling = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-id"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "POLLING",
+      "updated_at": "2025-04-21T23:35:29Z",
+      "warnings": []
+    }
+    """
+    job_response_body_complete = """
+    {
+      "created_at": "2025-04-21T23:35:27Z",
+      "errors": [],
+      "guid": "create-instance-job-guid",
+      "links": {
+        "self": {
+          "href": "https://api.fr.cloud.gov/v3/jobs/create-instance-job-id"
+        },
+        "service_instances": {
+          "href": "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+        }
+      },
+      "operation": "service_instance.create",
+      "state": "COMPLETE",
+      "updated_at": "2025-04-21T23:41:31Z",
+      "warnings": []
+    }
+    """
+
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_processing,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_polling,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_polling,
+    )
+    fake_requests.get(
+        "http://localhost/v3/jobs/create-instance-job-id",
+        text=job_response_body_complete,
+    )
+
+    response = cf.wait_for_job_complete("create-instance-job-id", fake_cf_client)
+    assert response["state"] == "COMPLETE"
+    assert response["links"]["service_instances"]["href"] == "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+
+
+def test_wait_for_job_complete_but_it_fails(fake_cf_client, fake_requests):
     job_response_body_processing = """
     {
       "created_at": "2025-04-21T23:35:27Z",
@@ -494,7 +575,7 @@ def test_wait_for_instance_ready_but_it_fails(fake_cf_client, fake_requests):
     )
 
     with pytest.raises(Exception, match="Job failed"):
-        cf.wait_for_service_instance_ready("create-instance-job-id", fake_cf_client)
+        cf.wait_for_job_complete("create-instance-job-id", fake_cf_client)
 
 
 def test_update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):

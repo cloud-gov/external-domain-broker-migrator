@@ -69,17 +69,16 @@ def create_bare_migrator_service_instance_in_space(
     return job_id
 
 
-#def get_migrator_service_instance_status(instance_id, client):
-#    logger.debug("polling service instance status for instance %s", instance_id)
-#    response = client.v2.service_instances.get(instance_id)
-#    return response["entity"]["last_operation"]["state"]
-
-
-def wait_for_service_instance_ready(job_id, client):
+def wait_for_job_complete(job_id, client):
     logger.debug("polling service instance status for instance %s", job_id)
     response = client.v3.jobs.wait_for_job_completion(job_id)
     if response['state'] != "COMPLETE":
         raise Exception(f"Job failed {response}")
+    return response
+    
+
+def wait_for_service_instance_create(job_id, client):
+    response = wait_for_job_complete(job_id, client)
     service_instance_link = response["links"]["service_instances"]["href"]
     service_instance_id = service_instance_link.split("/")[-1]
     return service_instance_id

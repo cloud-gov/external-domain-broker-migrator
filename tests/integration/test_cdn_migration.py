@@ -237,7 +237,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, cdn_migration, moc
         return_value="my-job-id"
     )
     update_instance_wait_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_service_instance_ready",
+        "migrator.migration.cf.wait_for_job_complete",
         return_value="my-migrator-instance",
     )
 
@@ -348,7 +348,7 @@ def test_update_existing_cdn_domain_failure(
         return_value="my-cursed-job-id"
     )
     update_instance_wait_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_service_instance_ready",
+        "migrator.migration.cf.wait_for_job_complete",
         side_effect=Exception(f"Job failed {dict(state='no good')}")
     )
 
@@ -465,7 +465,7 @@ def test_update_existing_cdn_domain_timeout_failure(
     # with this setup this mock will return "in progess" as many times as we call it
     # then later we 1: check that we got the expected exception and 2: that we called it the expected number of times
     update_instance_wait_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_service_instance_ready",
+        "migrator.migration.cf.wait_for_job_complete",
         side_effect=JobTimeout
     )
 
@@ -622,13 +622,17 @@ def test_migration_migrates_happy_path(
         "migrator.migration.cf.create_bare_migrator_service_instance_in_space",
         return_value="my-job",
     )
-    wait_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_service_instance_ready",
+    create_wait_mock = mocker.patch(
+        "migrator.migration.cf.wait_for_service_instance_create",
         return_value="my-instance-id",
     )
     update_service_instance_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        return_value="my-second-job"
+        side_effect=["my-second-job", "my-third-job"]
+    )
+    update_wait_mock = mocker.patch(
+        "migrator.migration.cf.wait_for_job_complete",
+        return_value={}, # it's a complex object in reality, but we ignore it
     )
 
     disable_service_mock = mocker.patch("migrator.migration.cf.disable_plan_for_org")
@@ -653,7 +657,7 @@ def test_migration_migrates_happy_path(
     )
 
     # wait for service instance
-    wait_mock.assert_has_calls([call("my-job", fake_cf_client),call("my-second-job", fake_cf_client)])
+    create_wait_mock.assert_called_once_with("my-job", fake_cf_client)
 
     # update service instance
     update_service_instance_mock.assert_has_calls(
@@ -690,6 +694,11 @@ def test_migration_migrates_happy_path(
             call("my-instance-id", {}, fake_cf_client, new_instance_name="my-cdn"),
         ]
     )
+
+    update_wait_mock.assert_has_calls([
+        call("my-second-job", fake_cf_client),
+        call("my-third-job", fake_cf_client)
+    ])
 
 
     # delete service plan visibility

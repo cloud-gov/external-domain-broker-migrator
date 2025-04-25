@@ -222,9 +222,15 @@ class Migration:
 
         raise Exception("Checking migrator service instance timed out.")
 
+    def wait_for_instance_update(self, job_id):
+        try:
+            return cf.wait_for_job_complete(job_id, self.client)
+        except JobTimeout as e:
+            raise Exception("Checking migrator service instance timed out.") from e
+
     def wait_for_instance_create(self, job_id):
         try:
-            return cf.wait_for_service_instance_ready(job_id, self.client)
+            return cf.wait_for_service_instance_create(job_id, self.client)
         except JobTimeout as e:
             raise Exception("Checking migrator service instance timed out.") from e
 
@@ -238,7 +244,7 @@ class Migration:
             self.client,
             new_instance_name=self.instance_name,
         )
-        return self.wait_for_instance_create(job_id)
+        return self.wait_for_instance_update(job_id)
 
     def mark_complete(self):
         self.route.state = "migrated"
@@ -388,7 +394,7 @@ class CdnMigration(Migration):
             new_plan_guid=config.CDN_PLAN_ID,
         )
 
-        self.wait_for_instance_create(job_id)
+        self.wait_for_instance_update(job_id)
 
     def _migrate(self):
         self.enable_migration_service_plan()
@@ -450,7 +456,7 @@ class DomainMigration(Migration):
             new_plan_guid=config.DOMAIN_PLAN_ID,
         )
 
-        self.wait_for_instance_create(job_id)
+        self.wait_for_instance_update(job_id)
 
     def _migrate(self):
         self.enable_migration_service_plan()
