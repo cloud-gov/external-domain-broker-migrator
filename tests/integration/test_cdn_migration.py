@@ -504,6 +504,9 @@ def test_update_existing_cdn_domain_timeout_failure(
     update_instance_wait_mock.assert_called_once_with(
             "my-unending-job", fake_cf_client
     )
+    # make sure we tried the right number of times, which is
+    # config.SERVICE_CHANGE_RETRY_COUNT
+    assert update_instance_wait_mock.call_count == 2
 
 
 def test_migration_migrates_happy_path(
