@@ -612,42 +612,57 @@ def test_update_existing_cdn_domain_service_instance(fake_cf_client, fake_reques
 
 def test_purge_service_instance(fake_cf_client, fake_requests):
     response_body = """{
-  "metadata": {
-    "guid": "my-service-instance",
-    "url": "/v2/service_instances/my-service-instance",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
+  "guid": "my-service-instance",
+  "created_at": "2016-06-08T16:41:29Z",
+  "updated_at": "2016-06-08T16:41:26Z",
+  "name": "name-1502",
+  "tags": [ ],
+  "type": "managed_service_instance",
+  "maintenance_info": {},
+  "dashboard_url": null,
+  "last_operation": {
+    "type": "delete",
+    "state": "complete",
+    "description": "",
+    "updated_at": "2016-06-08T16:41:29Z",
+    "created_at": "2016-06-08T16:41:29Z"
   },
-  "entity": {
-    "name": "name-1502",
-    "credentials": { },
-    "service_plan_guid": "8ea19d29-2e20-469e-8b91-917a6410e2f2",
-    "space_guid": "dd68a2ba-04a3-4125-99ea-643b96e07ef6",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "delete",
-      "state": "complete",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:29Z",
-      "created_at": "2016-06-08T16:41:29Z"
+  "relationships": {
+    "service_plan": {
+      "data": {
+        "guid": "8ea19d29-2e20-469e-8b91-917a6410e2f2"
+      }
     },
-    "tags": [ ],
-    "maintenance_info": {},
-    "space_url": "/v2/spaces/dd68a2ba-04a3-4125-99ea-643b96e07ef6",
-    "service_plan_url": "/v2/service_plans/8ea19d29-2e20-469e-8b91-917a6410e2f2",
-    "service_bindings_url": "/v2/service_instances/1aaeb02d-16c3-4405-bc41-80e83d196dff/service_bindings",
-    "service_keys_url": "/v2/service_instances/1aaeb02d-16c3-4405-bc41-80e83d196dff/service_keys",
-    "routes_url": "/v2/service_instances/1aaeb02d-16c3-4405-bc41-80e83d196dff/routes",
-    "shared_from_url": "/v2/service_instances/6da8d173-b409-4094-949f-3c1cc8a68503/shared_from",
-    "shared_to_url": "/v2/service_instances/6da8d173-b409-4094-949f-3c1cc8a68503/shared_to"
+    "space": {
+      "data": {
+        "guid": "dd68a2ba-04a3-4125-99ea-643b96e07ef6"
+      }
+    }
+  },
+  "links": {
+    "self": {
+      "href":  "/v3/service_instances/my-service-instance"
+    },
+    "service_plan": {
+      "href": "/v3/service_plans/8ea19d29-2e20-469e-8b91-917a6410e2f2"
+    },
+    "space": {
+      "href": "/v3/spaces/dd68a2ba-04a3-4125-99ea-643b96e07ef6"
+    },
+    "shared_spaces": {
+      "href": "/v3/service_instances/6da8d173-b409-4094-949f-3c1cc8a68503/relationships/shared_spaces"
+    },
+    "service_credential_bindings": {
+      "href": "/v3/service_credential_bindings?service_instance_guids=1aaeb02d-16c3-4405-bc41-80e83d196dff"
+    },
+    "service_route_bindings": {
+      "href": "/v3/service_route_bindings?service_isntance_guids=1aaeb02d-16c3-4405-bc41-80e83d196dff"
+    }
   }
-
-    } """
+ } """
 
     fake_requests.delete(
-        "http://localhost/v2/service_instances/my-service-instance?purge=true",
+        "http://localhost/v3/service_instances/my-service-instance?purge=true",
         text=response_body,
     )
 
