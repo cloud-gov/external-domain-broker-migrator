@@ -75,7 +75,7 @@ def cdn_migration(clean_db, fake_cf_client, fake_requests):
 {
   "guid": "asdf-asdf",
   "created_at": "2016-06-08T16:41:29Z",
-  "updated_at": "2016-06-08T16:41:26Z"
+  "updated_at": "2016-06-08T16:41:26Z",
   "name": "my-old-cdn",
   "type": "managed",
   "dashboard_url": null,
@@ -99,24 +99,23 @@ def cdn_migration(clean_db, fake_cf_client, fake_requests):
     }
   },
   "links": {
-      "self": {
-        "href": "/v3/service_instances/asdf-asdf"
-      },
-      "service_plan": {
-        "href": "/v3/service_plans/739e78F5-a919-46ef-9193-1293cc086c17"
-      },
-      "space": {
-        "href": "/v3/spaces/my-space-guid"
-      },
-      "shared_spaces": {
-        "href": "/v3/service_instances/asdf-asdf/relationships/shared_spaces"
-      },
-      "service_credentials_bindings": {
-        "href": "/v3/service_credential_bindings?service_instance_guids=asdf-asdf/credentials"
-      },
-      "service_routes_bindings": {
-        "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf"
-      }
+    "self": {
+      "href": "/v3/service_instances/asdf-asdf"
+    },
+    "service_plan": {
+      "href": "/v3/service_plans/739e78F5-a919-46ef-9193-1293cc086c17"
+    },
+    "space": {
+      "href": "/v3/spaces/my-space-guid"
+    },
+    "shared_spaces": {
+      "href": "/v3/service_instances/asdf-asdf/relationships/shared_spaces"
+    },
+    "service_credentials_bindings": {
+      "href": "/v3/service_credential_bindings?service_instance_guids=asdf-asdf/credentials"
+    },
+    "service_routes_bindings": {
+      "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf"
     }
   }
 }
@@ -161,7 +160,7 @@ def migration(clean_db, fake_cf_client, fake_requests):
     }
     "space": {
       "data": {
-        "guid": "my-space-guid"  
+        "guid": "my-space-guid"
       }
     }
   }
@@ -185,7 +184,7 @@ def migration(clean_db, fake_cf_client, fake_requests):
       "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf/routes"
     },
   }
-  
+
 }
     """
     fake_requests.get(
