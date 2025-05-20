@@ -113,7 +113,7 @@ class Migration:
 
     def get_instance_name(self):
         instance_data = cf.get_instance_data(self.instance_id, self.client)
-        return instance_data["entity"]["name"]
+        return instance_data["name"]
 
     @property
     def has_valid_dns(self):
