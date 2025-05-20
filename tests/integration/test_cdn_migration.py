@@ -16,7 +16,7 @@ def test_migration_init(clean_db, fake_cf_client, mocker):
     route.dist_id = "some-distribution-id"
     get_instance_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data",
-        return_value=dict(entity=dict(name="my-old-cdn")),
+        return_value=dict(name="my-old-cdn"),
     )
     cdn_migration = CdnMigration(route, clean_db, fake_cf_client)
     get_instance_mock.assert_called_once_with("asdf-asdf", fake_cf_client)
@@ -234,7 +234,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, cdn_migration, moc
 
     update_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        return_value="my-job-id"
+        return_value="my-job-id",
     )
     update_instance_wait_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
@@ -270,9 +270,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, cdn_migration, moc
         fake_cf_client,
         new_plan_guid="FAKE-CDN-PLAN-GUID",
     )
-    update_instance_wait_mock.assert_called_once_with(
-        "my-job-id", fake_cf_client
-    )
+    update_instance_wait_mock.assert_called_once_with("my-job-id", fake_cf_client)
 
 
 def test_update_existing_cdn_domain_failure(
@@ -345,16 +343,14 @@ def test_update_existing_cdn_domain_failure(
 
     update_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        return_value="my-cursed-job-id"
+        return_value="my-cursed-job-id",
     )
     update_instance_wait_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
-        side_effect=Exception(f"Job failed {dict(state='no good')}")
+        side_effect=Exception(f"Job failed {dict(state='no good')}"),
     )
 
-    with pytest.raises(
-        Exception, match="Job failed"
-    ):
+    with pytest.raises(Exception, match="Job failed"):
         cdn_migration.update_existing_cdn_domain()
 
     update_mock.assert_called_once_with(
@@ -459,14 +455,13 @@ def test_update_existing_cdn_domain_timeout_failure(
 
     update_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        return_value="my-unending-job"
+        return_value="my-unending-job",
     )
 
     # with this setup this mock will return "in progess" as many times as we call it
     # then later we 1: check that we got the expected exception and 2: that we called it the expected number of times
     update_instance_wait_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_job_complete",
-        side_effect=JobTimeout
+        "migrator.migration.cf.wait_for_job_complete", side_effect=JobTimeout
     )
 
     with pytest.raises(
@@ -501,9 +496,7 @@ def test_update_existing_cdn_domain_timeout_failure(
         fake_cf_client,
         new_plan_guid="FAKE-CDN-PLAN-GUID",
     )
-    update_instance_wait_mock.assert_called_once_with(
-            "my-unending-job", fake_cf_client
-    )
+    update_instance_wait_mock.assert_called_once_with("my-unending-job", fake_cf_client)
     # make sure we tried the right number of times, which is
     # config.SERVICE_CHANGE_RETRY_COUNT
     assert update_instance_wait_mock.call_count == 2
@@ -631,11 +624,11 @@ def test_migration_migrates_happy_path(
     )
     update_service_instance_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        side_effect=["my-second-job", "my-third-job"]
+        side_effect=["my-second-job", "my-third-job"],
     )
     update_wait_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
-        return_value={}, # it's a complex object in reality, but we ignore it
+        return_value={},  # it's a complex object in reality, but we ignore it
     )
 
     disable_service_mock = mocker.patch("migrator.migration.cf.disable_plan_for_org")
@@ -698,11 +691,9 @@ def test_migration_migrates_happy_path(
         ]
     )
 
-    update_wait_mock.assert_has_calls([
-        call("my-second-job", fake_cf_client),
-        call("my-third-job", fake_cf_client)
-    ])
-
+    update_wait_mock.assert_has_calls(
+        [call("my-second-job", fake_cf_client), call("my-third-job", fake_cf_client)]
+    )
 
     # delete service plan visibility
     disable_service_mock.assert_called_once_with(
