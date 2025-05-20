@@ -386,7 +386,7 @@ def test_update_existing_cdn_domain_failure(
 
 
 def test_update_existing_cdn_domain_timeout_failure(
-    clean_db, fake_cf_client, cdn_migration, mocker
+    clean_db, fake_cf_client, cdn_migration, mocker, fake_requests
 ):
     cdn_migration.route.dist_id = "some-distribution-id"
     cdn_migration._space_id = "my-space-guid"
@@ -460,8 +460,19 @@ def test_update_existing_cdn_domain_timeout_failure(
 
     # with this setup this mock will return "in progess" as many times as we call it
     # then later we 1: check that we got the expected exception and 2: that we called it the expected number of times
-    update_instance_wait_mock = mocker.patch(
-        "migrator.migration.cf.wait_for_job_complete", side_effect=JobTimeout
+    # update_instance_wait_mock = mocker.patch(
+    #     "migrator.migration.cf.wait_for_job_complete", side_effect=JobTimeout
+    # )
+
+    response_body = """
+{
+  "guid": "my-unending-job",
+  "state": "PROCESSING"
+}
+    """
+
+    get_job_mock = fake_requests.get(
+        "http://localhost/v3/jobs/my-unending-job", text=response_body
     )
 
     with pytest.raises(
@@ -496,10 +507,10 @@ def test_update_existing_cdn_domain_timeout_failure(
         fake_cf_client,
         new_plan_guid="FAKE-CDN-PLAN-GUID",
     )
-    update_instance_wait_mock.assert_called_once_with("my-unending-job", fake_cf_client)
+    assert get_job_mock._path == "/v3/jobs/my-unending-job"
     # make sure we tried the right number of times, which is
-    # config.SERVICE_CHANGE_RETRY_COUNT
-    assert update_instance_wait_mock.call_count == 2
+    # based on the timeout
+    assert get_job_mock.call_count == 3
 
 
 def test_migration_migrates_happy_path(
