@@ -109,13 +109,13 @@ def cdn_migration(clean_db, fake_cf_client, fake_requests):
         "href": "/v3/spaces/my-space-guid"
       },
       "shared_spaces": {
-        "href": "/v3/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/relationships/shared_spaces"
+        "href": "/v3/service_instances/asdf-asdf/relationships/shared_spaces"
       },
       "service_credentials_bindings": {
-        "href": "/v3/service_credential_bindings?service_instance_guids=my-migrator-instance/credentials"
+        "href": "/v3/service_credential_bindings?service_instance_guids=asdf-asdf/credentials"
       },
       "service_routes_bindings": {
-        "href": "/v3/service_route_bindings?service_instance_guids=my-migrator-instance"
+        "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf"
       }
     }
   }
@@ -153,7 +153,7 @@ def migration(clean_db, fake_cf_client, fake_requests):
     "updated_at": "2016-06-08T16:41:26Z",
     "created_at": "2016-06-08T16:41:29Z"
   },
-  "relationship": {
+  "relationships": {
     "service_plan": {
       "data": {
         "guid": "739e78F5-a919-46ef-9193-1293cc086c17"
@@ -166,6 +166,9 @@ def migration(clean_db, fake_cf_client, fake_requests):
     }
   }
   "links": {
+    "self": {
+        "href": "/v3/service_instances/asdf-asdf"
+    },
     "service_plan" {
       "href": "/v3/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
     },
@@ -173,13 +176,13 @@ def migration(clean_db, fake_cf_client, fake_requests):
       "href": "/v3/spaces/my-space-guid"
     },
     "shared_spaces": {
-      "href": "/v3/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from"
+      "href": "/v3/service_instances/asdf-asdf/shared_from"
     },
     "service_credential_bindings": {
-      "href": "/v3/service_instances/credential_service_bindings?service_instance_guidskkk=my-migrator-instance/service_bindings"
+      "href": "/v3/service_instances/credential_service_bindings?service_instance_guids=asdf-asdf/service_bindings"
     },
     "service_route_bindings": {
-      "href": "/v3/service_route_bindings?service_instance_guids=my-migrator-instance/routes"
+      "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf/routes"
     },
   }
   
