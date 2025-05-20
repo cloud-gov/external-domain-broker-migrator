@@ -74,7 +74,7 @@ def test_disable_service_plan_2(fake_requests, fake_cf_client):
     )
 
 
-def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
+def test_get_space_for_instance(fake_requests, fake_cf_client):
     response_body = """
    {
   "guid": "asdf-asdf",
@@ -140,7 +140,7 @@ def test_get_space_for_instance(migration, fake_requests, fake_cf_client):
         "http://localhost/v3/service_instances/asdf-asdf", text=response_body
     )
     assert (
-        cf.get_space_id_for_service_instance_id(migration.instance_id, fake_cf_client)
+        cf.get_space_id_for_service_instance_id("asdf-asdf", fake_cf_client)
         == "my-space-guid"
     )
 
@@ -495,7 +495,10 @@ def test_wait_for_job_complete(fake_cf_client, fake_requests):
 
     response = cf.wait_for_job_complete("create-instance-job-id", fake_cf_client)
     assert response["state"] == "COMPLETE"
-    assert response["links"]["service_instances"]["href"] == "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+    assert (
+        response["links"]["service_instances"]["href"]
+        == "https://api.fr.cloud.gov/v3/service_instances/my-service-instance-id"
+    )
 
 
 def test_wait_for_job_complete_but_it_fails(fake_cf_client, fake_requests):
@@ -579,7 +582,6 @@ def test_wait_for_job_complete_but_it_fails(fake_cf_client, fake_requests):
 
 
 def test_update_existing_cdn_domain_service_instance(fake_cf_client, fake_requests):
-
     def update_param_matcher(request):
         json_ = request.json()
         params = json_.get("parameters", {})
@@ -589,16 +591,15 @@ def test_update_existing_cdn_domain_service_instance(fake_cf_client, fake_reques
         return True
 
     fake_requests.patch(
-        "http://localhost/v3/service_instances/my-migrator-instance", text="",
+        "http://localhost/v3/service_instances/my-migrator-instance",
+        text="",
         headers={"Location": "http://localhost/v3/jobs/job-id"},
-        additional_matcher=update_param_matcher
+        additional_matcher=update_param_matcher,
     )
 
     response = cf.update_existing_cdn_domain_service_instance(
         "my-migrator-instance",
-        {
-          "param1": "value1"
-        },
+        {"param1": "value1"},
         fake_cf_client,
     )
 
@@ -662,7 +663,7 @@ def test_purge_service_instance(fake_cf_client, fake_requests):
  } """
 
     fake_requests.delete(
-        "http://localhost/v3/service_instances/my-service-instance?purge=true",
+        "http://localhost/v3/service_instances/my-service-instance",
         text=response_body,
     )
 

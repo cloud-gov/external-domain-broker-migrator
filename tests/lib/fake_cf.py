@@ -21,11 +21,8 @@ def get_test_client(fake_requests):
             dict(
                 links={
                     "self": dict(href="localhost"),
-                    "cloud_controller_v2": dict(
-                        href="localhost/v2", meta=dict(version="2.141.0")
-                    ),
                     "cloud_controller_v3": dict(
-                        href="localhost/v3", meta=dict(version="3.76.0")
+                        href="http://localhost/v3", meta=dict(version="3.76.0")
                     ),
                     "logging": None,
                     "log_stream": None,
