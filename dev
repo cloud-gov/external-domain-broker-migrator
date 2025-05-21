@@ -20,9 +20,9 @@ main() {
     -h)
       usage
       ;;
-    serve)
-      build_image
-      serve "$@"
+    docker-up)
+      cd docker
+      docker compose up
       ;;
     tests)
       build_image
