@@ -462,7 +462,7 @@ def test_update_existing_cdn_domain_timeout_failure(
         return_value="my-unending-job"
     )
 
-    # with this setup this mock will return "in progess" as many times as we call it
+    # with this setup this mock will return "in progress" as many times as we call it
     # then later we 1: check that we got the expected exception and 2: that we called it the expected number of times
     update_instance_wait_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
