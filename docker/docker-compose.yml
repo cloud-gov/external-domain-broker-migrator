@@ -1,0 +1,50 @@
+services:
+  postgresql:
+    build:
+      context: ./postgresql
+      args:
+        - USER=${USER}
+        - PGPASSWORD=${PGPASSWORD}
+    container_name: postgresql
+    ports:
+      - 5432:5432
+    expose:
+      - "5432"
+    networks:
+      - edb-testing
+  pebble:
+    image: ghcr.io/letsencrypt/pebble:latest
+    container_name: pebble
+    command: -config /test/config/pebble-config.json -strict -dnsserver "pebble-challtestsrv:8053"
+    environment:
+      # https://github.com/letsencrypt/pebble#testing-at-full-speed
+      - PEBBLE_VA_SLEEPTIME=3
+      # https://github.com/letsencrypt/pebble?tab=readme-ov-file#invalid-anti-replay-nonce-errors
+      - PEBBLE_WFE_NONCEREJECT=0
+    links:
+      - pebble-challtestsrv
+    ports:
+      - 14000:14000
+    expose:
+      - "14000"
+    networks:
+      - edb-testing
+  pebble-challtestsrv:
+    image: ghcr.io/letsencrypt/pebble-challtestsrv:latest
+    command: -defaultIPv6 "" -defaultIPv4 "0.0.0.0"
+    container_name: pebble-challtestsrv
+    ports:
+      - 8053:8053/udp
+      - 8055:8055
+    expose:
+      - "8053"
+      - "8055"
+    networks:
+      - edb-testing
+
+networks:
+  edb-testing:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.0.0/16"
