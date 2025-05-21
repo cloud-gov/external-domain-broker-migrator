@@ -551,7 +551,7 @@ def test_migration_migrates_happy_path(
 
     get_name_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data",
-        return_value={"entity": {"name": "my-cdn"}},
+        return_value={"name": "my-cdn"},
     )
     migration = CdnMigration(route, clean_db, fake_cf_client)
 
