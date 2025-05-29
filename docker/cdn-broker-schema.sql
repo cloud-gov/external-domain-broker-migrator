@@ -5,6 +5,7 @@
 -- Dumped from database version 12.7
 -- Dumped by pg_dump version 14.0
 
+\c local-development-cdn
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -467,4 +468,5 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 --
 -- PostgreSQL database dump complete
 --
+
 

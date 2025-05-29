@@ -234,7 +234,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, cdn_migration, moc
 
     update_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        return_value="my-job-id",
+        return_value="my-job-id"
     )
     update_instance_wait_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
