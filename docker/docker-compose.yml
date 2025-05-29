@@ -1,13 +1,105 @@
+version: "3.8"
+
 services:
+  app:
+    image: ${BASE_IMAGE:-ubuntu:22.04}
+    container_name: app
+    environment:
+      - ENV=local
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      - UID=${UID:-2000}
+      - GID=${GID:-2000}
+      - USER=app
+      - PG_MAJOR=15
+      - PGDATA=/tmp/data
+      - PGCONFIG=/tmp/data/postgresql.conf
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - PATH=/usr/local/bin:/usr/lib/postgresql/15/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes:
+      - .:/app
+      - app_pgdata:/tmp/data
+    working_dir: /app
+    user: "${UID:-2000}:${GID:-2000}"
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"
+    command: >
+      bash -c "
+      echo "HELLO!!!!!!!!!"
+      # Create user and group
+      grep -q \":$${GID}:\" /etc/group || groupadd --gid=\"$${GID}\" \"$${USER}\" &&
+      useradd --home-dir=\"/home/$${USER}\" --no-log-init --create-home --shell=/bin/bash --gid=$${GID} --uid=$${UID} --no-user-group --non-unique \"$${USER}\" 2>/dev/null || true &&
+
+      # Update and install packages
+      apt update && apt -y upgrade &&
+      apt install -y --no-install-recommends build-essential libpq-dev curl gnupg2 procps git lsb-release ca-certificates python3.11 python3-pip python3.11-dev &&
+
+      # Symlink python
+      ln -sf /usr/bin/python3.11 /usr/bin/python &&
+
+      # Install PostgreSQL
+      echo \"deb http://apt.postgresql.org/pub/repos/apt $$(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list &&
+      curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - &&
+      apt update &&
+      DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends postgresql-$${PG_MAJOR} &&
+
+      # Configure PostgreSQL
+      usermod -s /sbin/nologin postgres &&
+      mkdir -p \"$${PGDATA}\" &&
+      chown -R \"$${USER}:\" \"$${PGDATA}\" &&
+      chmod 700 \"$${PGDATA}\" &&
+
+      # Install Python packages
+      python -m pip install --upgrade pip &&
+      python -m pip install pip-tools &&
+      python -m pip install -r pip-tools/dev-requirements.txt &&
+
+      # Initialize PostgreSQL as app user
+      echo 'Creating databases'
+      su -s /bin/bash \"$${USER}\" -c \"
+      initdb &&
+      echo 'unix_socket_directories = \\\"'\"$${PGDATA}\"'\\\"' >> \\\"$${PGCONFIG}\\\" &&
+      echo 'log_statement = \\\"all\\\"' >> \\\"$${PGCONFIG}\\\" &&
+      echo 'log_connections = on' >> \\\"$${PGCONFIG}\\\" &&
+      echo 'log_disconnections = on' >> \\\"$${PGCONFIG}\\\" &&
+      echo 'log_line_prefix = \\\"\\\"' >> \\\"$${PGCONFIG}\\\" &&
+      sed -ri 's!^#?(listen_addresses)\\s*=\\s*\\S+.*!\\1 = \\\"*\\\"!' \\\"$${PGCONFIG}\\\" &&
+      echo 'CREATE DATABASE \\\"local-development-cdn\\\"' / postgres --single -D \\\"$${PGDATA}\\\" postgres &&
+      echo 'CREATE DATABASE \\\"local-development-domain\\\"' / postgres --single -D \\\"$${PGDATA}\\\" postgres
+      \" &&
+
+      # Keep container running
+      bash
+      "
+    stdin_open: true
+    tty: true
+    links:
+      - postgresql
+      - pebble
+    networks:
+      - edb-testing
+
   postgresql:
     image: postgres:15
     container_name: postgresql
     ports:
       - 5432:5432
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./01-initdb-create-dbs.sql:/docker-entrypoint-initdb.d/01-initdb-create-dbs.sql
+      - ./domain-broker-schema.sql:/docker-entrypoint-initdb.d/domain-broker-schema.sql
+      - ./cdn-broker-schema.sql:/docker-entrypoint-initdb.d/cdn-broker-schema.sql
     expose:
       - "5432"
     networks:
       - edb-testing
+
   pebble:
     image: ghcr.io/letsencrypt/pebble:latest
     container_name: pebble
@@ -25,6 +117,7 @@ services:
       - "14000"
     networks:
       - edb-testing
+
   pebble-challtestsrv:
     image: ghcr.io/letsencrypt/pebble-challtestsrv:latest
     command: -defaultIPv6 "" -defaultIPv4 "0.0.0.0"
@@ -44,3 +137,9 @@ networks:
       driver: default
       config:
         - subnet: "172.16.0.0/16"
+
+volumes:
+  postgres_data:
+    driver: local
+  app_pgdata:
+    driver: local

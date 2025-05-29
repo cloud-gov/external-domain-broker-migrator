@@ -1,15 +1,15 @@
 import datetime
 
-from cloudfoundry_client.errors import InvalidStatusCode
 import pytest
+from cloudfoundry_client.errors import InvalidStatusCode
 
 from migrator.migration import (
+    CdnMigration,
+    DomainMigration,
+    Migration,
+    find_active_instances,
     find_migrations,
     migration_for_instance_id,
-    find_active_instances,
-    Migration,
-    DomainMigration,
-    CdnMigration,
 )
 from migrator.models import CdnRoute, DomainRoute
 
@@ -39,8 +39,7 @@ def test_find_instances(clean_db):
 
 
 def test_get_migrations(clean_db, fake_cf_client, mocker):
-
-    good_result = dict(entity=dict(name="my-old-cdn"))
+    good_result = dict(name="my-old-cdn")
     bad_result = InvalidStatusCode("404", "not here")
     get_instance_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data",
@@ -77,7 +76,7 @@ def test_get_migrations(clean_db, fake_cf_client, mocker):
 
 
 def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests, mocker):
-    good_result = dict(entity=dict(name="my-old-cdn"))
+    good_result = dict(name="my-old-cdn")
     get_instance_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data", return_value=good_result
     )
@@ -103,6 +102,7 @@ def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests, mock
     assert isinstance(migration, DomainMigration)
     assert migration.route.instance_id == "alb-5678"
     get_instance_mock.assert_called_once_with("alb-5678", fake_cf_client)
+
 
 
 def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
@@ -292,11 +292,11 @@ def test_create_bare_migrator_instance_in_org_space_success(
 def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker):
     update_service_instance_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        return_value="my-job-id"
+        return_value="my-job-id",
     )
     instance_status_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
-        return_value={} # the return is a complex dict, but we ignore it
+        return_value={},  # the return is a complex dict, but we ignore it
     )
     migration.external_domain_broker_service_instance = "migrator-instance-id"
     migration.update_instance_name()

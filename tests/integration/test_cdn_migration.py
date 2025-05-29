@@ -16,7 +16,7 @@ def test_migration_init(clean_db, fake_cf_client, mocker):
     route.dist_id = "some-distribution-id"
     get_instance_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data",
-        return_value=dict(name="my-old-cdn"),
+        return_value={"name":"my-old-cdn"}
     )
     cdn_migration = CdnMigration(route, clean_db, fake_cf_client)
     get_instance_mock.assert_called_once_with("asdf-asdf", fake_cf_client)

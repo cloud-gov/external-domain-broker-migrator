@@ -143,7 +143,7 @@ def migration(clean_db, fake_cf_client, fake_requests):
   "created_at": "2016-06-08T16:41:29Z",
   "updated_at": "2016-06-08T16:41:26Z",
   "name": "my-old-cdn",
-  "type": "managed_service_instance",
+  "type": "managed",
   "dashboard_url": null,
   "last_operation": {
     "type": "create",
@@ -157,19 +157,19 @@ def migration(clean_db, fake_cf_client, fake_requests):
       "data": {
         "guid": "739e78F5-a919-46ef-9193-1293cc086c17"
       }
-    }
+    },
     "space": {
       "data": {
         "guid": "my-space-guid"
       }
     }
-  }
+  },
   "links": {
     "self": {
         "href": "/v3/service_instances/asdf-asdf"
     },
-    "service_plan" {
-      "href": "/v3/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
+    "service_plan": {
+      "href": "/v3/service_plans/739e78F5-a919-46ef-9193-1293cc086c17"
     },
     "space": {
       "href": "/v3/spaces/my-space-guid"
@@ -182,7 +182,7 @@ def migration(clean_db, fake_cf_client, fake_requests):
     },
     "service_route_bindings": {
       "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf/routes"
-    },
+    }
   }
 
 }

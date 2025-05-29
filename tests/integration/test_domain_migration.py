@@ -75,7 +75,7 @@ def test_gets_active_cert(clean_db, domain_migration):
 def subtest_migration_instantiable(clean_db, fake_cf_client, domain_route, mocker):
     get_instance_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data",
-        return_value=dict(entity=dict(name="my-old-domain")),
+        return_value={"name":"my-old-domain"},
     )
     migration = DomainMigration(domain_route, clean_db, fake_cf_client)
     get_instance_mock.assert_called_once_with("asdf-asdf", fake_cf_client)
