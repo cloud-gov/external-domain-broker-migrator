@@ -234,7 +234,7 @@ def test_update_existing_cdn_domain(clean_db, fake_cf_client, cdn_migration, moc
 
     update_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        return_value="my-job-id"
+        return_value="my-job-id",
     )
     update_instance_wait_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
@@ -457,12 +457,6 @@ def test_update_existing_cdn_domain_timeout_failure(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
         return_value="my-unending-job",
     )
-
-    # with this setup this mock will return "in progess" as many times as we call it
-    # then later we 1: check that we got the expected exception and 2: that we called it the expected number of times
-    # update_instance_wait_mock = mocker.patch(
-    #     "migrator.migration.cf.wait_for_job_complete", side_effect=JobTimeout
-    # )
 
     response_body = """
 {
@@ -703,7 +697,8 @@ def test_migration_migrates_happy_path(
     )
 
     update_wait_mock.assert_has_calls(
-        [call("my-second-job", fake_cf_client), call("my-third-job", fake_cf_client)]
+        [call("my-second-job", fake_cf_client),
+         call("my-third-job", fake_cf_client)]
     )
 
     # delete service plan visibility

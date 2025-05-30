@@ -24,6 +24,10 @@ main() {
       cd docker
       docker compose up
       ;;
+    serve)
+      build_image
+      serve "$@"
+      ;;
     tests)
       build_image
       tests "$@"
