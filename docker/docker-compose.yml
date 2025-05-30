@@ -14,7 +14,6 @@ services:
       - edb-testing
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
-      # - POSTGRES_USER=postgres
 
   pebble:
     image: ghcr.io/letsencrypt/pebble:latest
