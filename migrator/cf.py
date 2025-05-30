@@ -1,6 +1,10 @@
 import logging
+import time
+
 from cloudfoundry_client.client import CloudFoundryClient
 from cloudfoundry_client.errors import InvalidStatusCode
+
+from migrator.extensions import config
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +74,20 @@ def create_bare_migrator_service_instance_in_space(
 
 
 def wait_for_job_complete(job_id, client):
-    logger.debug("polling service instance status for instance %s", job_id)
-    response = client.v3.jobs.wait_for_job_completion(job_id)
-    if response['state'] != "COMPLETE":
+    logger.debug("polling job status for %s", job_id)
+
+    response = client.v3.jobs.wait_for_job_completion(
+        job_id,
+        step=config.SERVICE_CHANGE_POLL_TIME_SECONDS,
+        timeout=(
+            config.SERVICE_CHANGE_RETRY_COUNT * config.SERVICE_CHANGE_POLL_TIME_SECONDS
+        ),
+    )
+
+    if response["state"] != "COMPLETE":
         raise Exception(f"Job failed {response}")
     return response
-    
+
 
 def wait_for_service_instance_create(job_id, client):
     response = wait_for_job_complete(job_id, client)
@@ -101,8 +113,8 @@ def update_existing_cdn_domain_service_instance(
 
 def purge_service_instance(instance_id, client):
     logger.debug("purging service instance %s", instance_id)
-    return client.v2.service_instances.remove(instance_id, purge=True)
+    return client.v3.service_instances.remove(instance_id)
 
 
 def get_instance_data(instance_id, client):
-    return client.v2.service_instances.get(instance_id)
+    return client.v3.service_instances.get(instance_id)

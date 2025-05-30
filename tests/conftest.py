@@ -73,39 +73,55 @@ def cdn_migration(clean_db, fake_cf_client, fake_requests):
     certificate1.expires = datetime.datetime.now() - datetime.timedelta(days=1)
     response_body = """
 {
-  "metadata": {
-    "guid": "asdf-asdf",
-    "url": "/v2/service_instances/asdf-asdf",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
+  "guid": "asdf-asdf",
+  "created_at": "2016-06-08T16:41:29Z",
+  "updated_at": "2016-06-08T16:41:26Z",
+  "name": "my-old-cdn",
+  "type": "managed",
+  "dashboard_url": null,
+  "last_operation": {
+     "type": "create",
+     "state": "succeeded",
+     "description": "",
+     "updated_at": "2016-06-08T16:41:26Z",
+     "created_at": "2016-06-08T16:41:29Z"
   },
-  "entity": {
-    "name": "my-old-cdn",
-    "credentials": { },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "succeeded",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
+  "relationships": {
+    "service_plan": {
+      "data": {
+        "guid": "739e78F5-a919-46ef-9193-1293cc086c17"
+      }
     },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+    "space": {
+      "data" :{
+        "guid": "my-space-guid"
+      }
+    }
+  },
+  "links": {
+    "self": {
+      "href": "/v3/service_instances/asdf-asdf"
+    },
+    "service_plan": {
+      "href": "/v3/service_plans/739e78F5-a919-46ef-9193-1293cc086c17"
+    },
+    "space": {
+      "href": "/v3/spaces/my-space-guid"
+    },
+    "shared_spaces": {
+      "href": "/v3/service_instances/asdf-asdf/relationships/shared_spaces"
+    },
+    "service_credentials_bindings": {
+      "href": "/v3/service_credential_bindings?service_instance_guids=asdf-asdf/credentials"
+    },
+    "service_routes_bindings": {
+      "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf"
+    }
   }
 }
     """
     fake_requests.get(
-        "http://localhost/v2/service_instances/asdf-asdf", text=response_body
+        "http://localhost/v3/service_instances/asdf-asdf", text=response_body
     )
     clean_db.add_all([route, certificate0, certificate1])
     clean_db.commit()
@@ -123,39 +139,56 @@ def migration(clean_db, fake_cf_client, fake_requests):
     route.instance_id = "asdf-asdf"
     response_body = """
 {
-  "metadata": {
-    "guid": "asdf-asdf",
-    "url": "/v2/service_instances/asdf-asdf",
-    "created_at": "2016-06-08T16:41:29Z",
-    "updated_at": "2016-06-08T16:41:26Z"
+  "guid": "asdf-asdf",
+  "created_at": "2016-06-08T16:41:29Z",
+  "updated_at": "2016-06-08T16:41:26Z",
+  "name": "my-old-cdn",
+  "type": "managed",
+  "dashboard_url": null,
+  "last_operation": {
+    "type": "create",
+    "state": "succeeded",
+    "description": "",
+    "updated_at": "2016-06-08T16:41:26Z",
+    "created_at": "2016-06-08T16:41:29Z"
   },
-  "entity": {
-    "name": "my-old-cdn",
-    "credentials": { },
-    "service_plan_guid": "739e78F5-a919-46ef-9193-1293cc086c17",
-    "space_guid": "my-space-guid",
-    "gateway_data": null,
-    "dashboard_url": null,
-    "type": "managed_service_instance",
-    "last_operation": {
-      "type": "create",
-      "state": "succeeded",
-      "description": "",
-      "updated_at": "2016-06-08T16:41:26Z",
-      "created_at": "2016-06-08T16:41:29Z"
+  "relationships": {
+    "service_plan": {
+      "data": {
+        "guid": "739e78F5-a919-46ef-9193-1293cc086c17"
+      }
     },
-    "space_url": "/v2/spaces/my-space-guid",
-    "service_plan_url": "/v2/service_plans/739e78F5-a919-46ef-9193-1293cc086c17",
-    "service_bindings_url": "/v2/service_instances/my-migrator-instance/service_bindings",
-    "service_keys_url": "/v2/service_instances/my-migrator-instance/service_keys",
-    "routes_url": "/v2/service_instances/my-migrator-instance/routes",
-    "shared_from_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_from",
-    "shared_to_url": "/v2/service_instances/0d632575-bb06-4ea5-bb19-a451a9644d92/shared_to"
+    "space": {
+      "data": {
+        "guid": "my-space-guid"
+      }
+    }
+  },
+  "links": {
+    "self": {
+        "href": "/v3/service_instances/asdf-asdf"
+    },
+    "service_plan": {
+      "href": "/v3/service_plans/739e78F5-a919-46ef-9193-1293cc086c17"
+    },
+    "space": {
+      "href": "/v3/spaces/my-space-guid"
+    },
+    "shared_spaces": {
+      "href": "/v3/service_instances/asdf-asdf/shared_from"
+    },
+    "service_credential_bindings": {
+      "href": "/v3/service_instances/credential_service_bindings?service_instance_guids=asdf-asdf/service_bindings"
+    },
+    "service_route_bindings": {
+      "href": "/v3/service_route_bindings?service_instance_guids=asdf-asdf/routes"
+    }
   }
+
 }
     """
     fake_requests.get(
-        "http://localhost/v2/service_instances/asdf-asdf", text=response_body
+        "http://localhost/v3/service_instances/asdf-asdf", text=response_body
     )
     migration = CdnMigration(route, clean_db, fake_cf_client)
     return migration

@@ -9,7 +9,7 @@ if ! pgrep -x postgres > /dev/null; then
   (
     cd "$PGDATA"
     echo > "$LOGS/postgres.log"
-    pg_ctl -l "$LOGS/postgres.log" start 
+    pg_ctl -l "$LOGS/postgres.log" start
     psql -h localhost --dbname="local-development-cdn" -f /app/docker/cdn-broker-schema.sql
     psql -h localhost --dbname="local-development-domain" -f /app/docker/domain-broker-schema.sql
   )

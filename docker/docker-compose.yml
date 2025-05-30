@@ -1,0 +1,53 @@
+services:
+  postgresql:
+    image: postgres:15
+    container_name: postgresql
+    ports:
+      - 5432:5432
+    expose:
+      - "5432"
+    volumes:
+      - ./initdb-create-dbs.sql:/docker-entrypoint-initdb.d/initdb-create-dbs.sql
+      - ./domain-broker-schema.sql:/tmp/domain-broker-schema.sql
+      - ./cdn-broker-schema.sql:/tmp/cdn-broker-schema.sql
+    networks:
+      - edb-testing
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+
+  pebble:
+    image: ghcr.io/letsencrypt/pebble:latest
+    container_name: pebble
+    command: -config /test/config/pebble-config.json -strict -dnsserver "pebble-challtestsrv:8053"
+    environment:
+      # https://github.com/letsencrypt/pebble#testing-at-full-speed
+      - PEBBLE_VA_SLEEPTIME=3
+      # https://github.com/letsencrypt/pebble?tab=readme-ov-file#invalid-anti-replay-nonce-errors
+      - PEBBLE_WFE_NONCEREJECT=0
+    links:
+      - pebble-challtestsrv
+    ports:
+      - 14000:14000
+    expose:
+      - "14000"
+    networks:
+      - edb-testing
+  pebble-challtestsrv:
+    image: ghcr.io/letsencrypt/pebble-challtestsrv:latest
+    command: -defaultIPv6 "" -defaultIPv4 "0.0.0.0"
+    container_name: pebble-challtestsrv
+    ports:
+      - 8053:8053/udp
+      - 8055:8055
+    expose:
+      - "8053"
+      - "8055"
+    networks:
+      - edb-testing
+
+networks:
+  edb-testing:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.0.0/16"
