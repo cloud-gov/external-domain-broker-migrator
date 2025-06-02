@@ -59,7 +59,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg ma
       && DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends "postgresql-$PG_MAJOR"
 
 # Disable login shell for postgres user
-RUN usermod -s /sbin/nologin postgres
+# RUN usermod -s /sbin/nologin postgres
 
 ENV PGDATA /tmp/data
 ENV PGCONFIG /tmp/data/postgresql.conf
@@ -83,7 +83,7 @@ WORKDIR /app
 RUN chown "$UID:$GID" .
 USER $UID:$GID
 
-RUN initdb \
+RUN initdb --username postgres \
       && echo "unix_socket_directories = '$PGDATA'" >> "$PGCONFIG" \
       && echo "log_statement = 'all'" >> "$PGCONFIG" \
       && echo "log_connections = on" >> "$PGCONFIG" \
