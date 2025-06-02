@@ -62,7 +62,9 @@ class LocalConfig(Config):
         super().__init__()
         self.TESTING = True
         self.DEBUG = True
-        self.CDN_BROKER_DATABASE_URI = "postgresql://postgres@localhost/local-development-cdn"
+        self.CDN_BROKER_DATABASE_URI = (
+            "postgresql://postgres@localhost/local-development-cdn"
+        )
         self.DOMAIN_BROKER_DATABASE_URI = (
             "postgresql://postgres@localhost/local-development-domain"
         )
