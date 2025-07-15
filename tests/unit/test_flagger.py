@@ -14,7 +14,7 @@ def test_flagger_finds_domains(clean_db):
     clean_db.commit()
     clean_db.close()
     domains = find_domains(clean_db)
-    assert re.match(r"domain\d.example.com", domains[0])
+    assert re.match(r"domain\d\.example\.com", domains[0])
     assert len(domains) == 5
 
 
