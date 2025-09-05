@@ -56,15 +56,16 @@ Unit tests can be run without external services - this should help speed up test
 tests being run in e.g, github actions.
 
 To run unit tests:
+
 1. create a virtual environment
 2. install the dev dependencies into your environment
 3. set `ENV` to `unit`
 4. run pytest, specifying the unit directory
 
 ```bash
-$ python3 -m venv venv
-$ venv/bin/python3 -m pip install -r ./pip-tools/dev-requirements.txt
-$ ENV=unit venv/bin/python3 -m pytest tests/unit
+python3 -m venv venv
+venv/bin/python3 -m pip install -r ./pip-tools/dev-requirements.txt
+ENV=unit venv/bin/python3 -m pytest tests/unit
 ```
 
 ### Integration tests

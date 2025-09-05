@@ -16,8 +16,8 @@ def send_email(email, subject, body):
     # if we have a cert, then trust it
     if config.SMTP_TLS:
         sslcontext = ssl.create_default_context()
-        if config.SMTP_CERT is not None:
-            sslcontext.load_verify_locations(cadata=config.SMTP_CERT)
+        if config.SMTP_CERT_CA is not None:
+            sslcontext.load_verify_locations(cadata=config.SMTP_CERT_CA)
         s.starttls(context=sslcontext)
 
     # if smtp credentials were provided, login

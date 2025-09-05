@@ -9,3 +9,4 @@ pytest-profiling
 pytest-watch
 requests-mock
 requests
+pytest-cov
