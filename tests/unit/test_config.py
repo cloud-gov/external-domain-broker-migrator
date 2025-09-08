@@ -84,7 +84,7 @@ def mocked_env(vcap_application, vcap_services, monkeypatch):
     monkeypatch.setenv("SMTP_PASS", "this-password-is-invalid")
     monkeypatch.setenv("SMTP_FROM", "no-reply@example.com")
     monkeypatch.setenv("SMTP_TO", "alerts@example.com")
-    monkeypatch.setenv("SMTP_CERT", "A_REAL_CERT_WOULD_BE_LONGER_THAN_THIS")
+    monkeypatch.setenv("SMTP_CERT_CA", "A_REAL_CERT_WOULD_BE_LONGER_THAN_THIS")
     monkeypatch.setenv("MIGRATION_PLAN_ID", "A_MIGRATION_PLAN_ID")
     monkeypatch.setenv("CDN_PLAN_ID", "A_CDN_PLAN_ID")
     monkeypatch.setenv("DOMAIN_PLAN_ID", "A_DOMAIN_PLAN_ID")
@@ -134,5 +134,5 @@ def test_config_sets_smtp_variables(env, monkeypatch, mocked_env):
     assert config.SMTP_PASS == "this-password-is-invalid"
     assert config.SMTP_HOST == "127.0.0.1"
     assert config.SMTP_PORT == 1025
-    assert config.SMTP_CERT == "A_REAL_CERT_WOULD_BE_LONGER_THAN_THIS"
+    assert config.SMTP_CERT_CA == "A_REAL_CERT_WOULD_BE_LONGER_THAN_THIS"
     assert config.SMTP_TO == "alerts@example.com"

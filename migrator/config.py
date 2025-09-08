@@ -139,7 +139,7 @@ class AppConfig(Config):
 
         self.SMTP_HOST = self.env_parser("SMTP_HOST")
         self.SMTP_FROM = self.env_parser("SMTP_FROM")
-        self.SMTP_CERT = self.env_parser("SMTP_CERT")
+        self.SMTP_CERT_CA = self.env_parser("SMTP_CERT_CA")
         self.SMTP_USER = self.env_parser("SMTP_USER")
         self.SMTP_PASS = self.env_parser("SMTP_PASS")
         self.SMTP_PORT = self.env_parser.int("SMTP_PORT")

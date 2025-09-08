@@ -1,5 +1,4 @@
 import boto3
-from cloudfoundry_client.client import CloudFoundryClient
 
 from migrator.config import config_from_env
 

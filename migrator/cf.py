@@ -1,12 +1,8 @@
-import logging
-import time
-
 from cloudfoundry_client.client import CloudFoundryClient
 from cloudfoundry_client.errors import InvalidStatusCode
 
+from migrator import logger
 from migrator.extensions import config
-
-logger = logging.getLogger(__name__)
 
 
 def get_cf_client(config):

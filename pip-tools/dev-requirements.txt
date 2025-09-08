@@ -61,6 +61,8 @@ cloudfoundry-client==1.38.6
     # via -r pip-tools/../requirements.txt
 colorama==0.4.6
     # via pytest-watch
+coverage[toml]==7.9.2
+    # via pytest-cov
 cryptography==45.0.5
     # via -r pip-tools/../requirements.txt
 dnspython==2.7.0
@@ -129,7 +131,9 @@ pip-tools==7.4.1
 platformdirs==4.3.8
     # via black
 pluggy==1.6.0
-    # via pytest
+    # via
+    #   pytest
+    #   pytest-cov
 polling2==0.5.0
     # via
     #   -r pip-tools/../requirements.txt
@@ -162,9 +166,12 @@ pyproject-hooks==1.2.0
 pytest==8.4.1
     # via
     #   -r pip-tools/dev-requirements.in
+    #   pytest-cov
     #   pytest-mock
     #   pytest-profiling
     #   pytest-watch
+pytest-cov==6.2.1
+    # via -r pip-tools/dev-requirements.in
 pytest-mock==3.14.1
     # via -r pip-tools/dev-requirements.in
 pytest-profiling==1.8.1
@@ -215,6 +222,7 @@ tomli==2.2.1
     # via
     #   black
     #   build
+    #   coverage
     #   pip-tools
     #   pytest
 typing-extensions==4.14.1

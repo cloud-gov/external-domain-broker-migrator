@@ -20,7 +20,7 @@ main() {
     -h)
       usage
       ;;
-    docker-up)
+    docker-up|docker-start)
       cd docker
       docker compose up
       ;;
