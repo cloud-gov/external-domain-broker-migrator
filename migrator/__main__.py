@@ -1,6 +1,7 @@
 import argparse
-import time
 import schedule
+import sys
+import time
 
 from migrator.extensions import config
 from migrator.db import check_connections, session_handler
@@ -35,8 +36,6 @@ def parse_args(args):
 
 
 def main():
-    raise RuntimeError("foobar")
-    logging.basicConfig(level=logging.DEBUG)
     args = parse_args(sys.argv[1:])
     check_connections()
     if args.cron:

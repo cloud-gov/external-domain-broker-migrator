@@ -4,6 +4,7 @@ import sys
 
 # Get a named logger (e.g., based on the module name)
 logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.DEBUG)
 
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(message)s")
