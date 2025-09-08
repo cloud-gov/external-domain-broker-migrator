@@ -1,9 +1,6 @@
 import argparse
-import logging
 import time
-import sys
 import schedule
-import traceback
 
 from migrator.extensions import config
 from migrator.db import check_connections, session_handler
@@ -37,24 +34,8 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def exception_logging(exctype, value, tb):
-    """
-    Log exception by using the root logger.
-
-    Parameters
-    ----------
-    exctype : type
-    value : NameError
-    tb : traceback
-    """
-    write_val = {
-        "exception_type": str(exctype),
-        "message": str(traceback.format_tb(tb, 10)),
-    }
-    logging.exception(str(write_val))
-
-
 def main():
+    raise RuntimeError("foobar")
     logging.basicConfig(level=logging.DEBUG)
     args = parse_args(sys.argv[1:])
     check_connections()
@@ -74,4 +55,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    sys.excepthook = exception_logging

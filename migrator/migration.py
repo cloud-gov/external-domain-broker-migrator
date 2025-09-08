@@ -1,11 +1,9 @@
-import logging
 import time
 
 from cloudfoundry_client.errors import InvalidStatusCode
 from cloudfoundry_client.v3.jobs import JobTimeout
 
-from migrator import cf
-from migrator.db import session_handler
+from migrator import cf, logger
 from migrator.dns import has_expected_cname
 from migrator.extensions import (
     cloudfront,
@@ -14,8 +12,6 @@ from migrator.extensions import (
 )
 from migrator.models import CdnRoute, DomainRoute
 from migrator.smtp import send_email
-
-logger = logging.getLogger(__name__)
 
 
 def find_active_instances(session):

@@ -1,16 +1,13 @@
-import logging
-
 import dns.resolver
 
 from migrator.extensions import config
+from migrator import logger
 
 (_nameserver, _port) = config.DNS_VERIFICATION_SERVER.split(":")
 _root_dns = config.DNS_ROOT_DOMAIN
 _resolver = dns.resolver.Resolver(configure=False)
 _resolver.nameservers = [_nameserver]
 _resolver.port = int(_port)
-
-logger = logging.getLogger(__name__)
 
 
 def get_cname(domain: str) -> str:
