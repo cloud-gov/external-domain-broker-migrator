@@ -1,7 +1,7 @@
 import dns.resolver
 
-from migrator.extensions import config
 from migrator import logger
+from migrator.extensions import config
 
 (_nameserver, _port) = config.DNS_VERIFICATION_SERVER.split(":")
 _root_dns = config.DNS_ROOT_DOMAIN
