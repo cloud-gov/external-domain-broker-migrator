@@ -2,10 +2,11 @@ import logging
 import traceback
 import sys
 
-# Get a named logger (e.g., based on the module name)
+# Initialize a logger for the module
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.DEBUG)
 
+# Set the log format to include only the message
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(message)s")
 handler.setFormatter(formatter)
