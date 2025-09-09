@@ -611,7 +611,7 @@ def test_update_existing_cdn_domain_service_instance(fake_cf_client, fake_reques
     assert response == "job-id"
 
 
-def test_purge_service_instance(fake_cf_client, fake_requests):
+def test_purge_service_instance(fake_cf_client, fake_requests: requests_mock.Mocker):
     response_body = """{
   "guid": "my-service-instance",
   "created_at": "2016-06-08T16:41:29Z",
@@ -667,5 +667,69 @@ def test_purge_service_instance(fake_cf_client, fake_requests):
         text=response_body,
     )
 
+    response_body = """{
+        "description": "Resource not found",
+        "error_code": "CF-ResourceNotFound",
+        "code": 10010
+    }
+    """
+
+    fake_requests.get(
+        "http://localhost/v3/service_instances/my-service-instance",
+        text=response_body,
+        status_code=404,
+    )
+
     cf.purge_service_instance("my-service-instance", fake_cf_client)
     assert fake_requests.called
+
+
+def test_purge_service_instance_retries(
+    fake_cf_client, fake_requests: requests_mock.Mocker
+):
+    fake_requests.delete(
+        "http://localhost/v3/service_instances/my-service-instance", status_code=200
+    )
+
+    not_found_response = """{
+        "description": "Resource not found",
+        "error_code": "CF-ResourceNotFound",
+        "code": 10010
+    }
+    """
+
+    fake_requests.register_uri(
+        "GET",
+        "http://localhost/v3/service_instances/my-service-instance",
+        [
+            {"status_code": 200},
+            {"status_code": 404, "text": not_found_response},
+        ],
+    )
+
+    cf.purge_service_instance("my-service-instance", fake_cf_client)
+    assert fake_requests.called
+    assert len(fake_requests.request_history) == 3
+
+
+def test_purge_service_instance_gives_up_after_maximum_retries(
+    fake_cf_client, fake_requests: requests_mock.Mocker
+):
+    fake_requests.delete(
+        "http://localhost/v3/service_instances/my-service-instance", status_code=200
+    )
+
+    fake_requests.register_uri(
+        "GET",
+        "http://localhost/v3/service_instances/my-service-instance",
+        [
+            {"status_code": 200},
+            {"status_code": 200},
+        ],
+    )
+
+    with pytest.raises(RuntimeError):
+        cf.purge_service_instance("my-service-instance", fake_cf_client)
+
+    assert fake_requests.called
+    assert len(fake_requests.request_history) == 3
