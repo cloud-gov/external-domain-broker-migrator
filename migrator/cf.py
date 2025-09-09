@@ -1,3 +1,5 @@
+import time
+
 from cloudfoundry_client.client import CloudFoundryClient
 from cloudfoundry_client.errors import InvalidStatusCode
 
@@ -18,7 +20,7 @@ def get_cf_client(config):
     return client
 
 
-def enable_plan_for_org(plan_id, org_id, client):
+def enable_plan_for_org(plan_id: str, org_id: str, client: CloudFoundryClient):
     logger.debug("enabling plan for %s", org_id)
     orgs = [{"guid": org_id}]
     try:
@@ -28,33 +30,37 @@ def enable_plan_for_org(plan_id, org_id, client):
             raise e
 
 
-def disable_plan_for_org(plan_id, org_id, client):
+def disable_plan_for_org(plan_id: str, org_id: str, client: CloudFoundryClient):
     logger.debug("disabling plan visibility")
     return client.v3.service_plans.remove_org_from_service_plan_visibility(
         plan_id, org_id
     )
 
 
-def get_space_id_for_service_instance_id(instance_id, client):
+def get_space_id_for_service_instance_id(instance_id: str, client: CloudFoundryClient):
     logger.debug("getting space_id for instance %s", instance_id)
     response = client.v3.service_instances.get(instance_id)
     return response["relationships"]["space"]["data"]["guid"]
 
 
-def get_org_id_for_space_id(space_id, client):
+def get_org_id_for_space_id(space_id: str, client: CloudFoundryClient):
     logger.debug("getting org_id for space %s", space_id)
     response = client.v3.spaces.get(space_id)
     return response["relationships"]["organization"]["data"]["guid"]
 
 
-def get_all_space_ids_for_org(org_id, client):
+def get_all_space_ids_for_org(org_id: str, client: CloudFoundryClient):
     logger.debug("getting space_ids for org %s", org_id)
     spaces = client.v3.spaces.list(organization_guids=[org_id])
     return [space["guid"] for space in spaces]
 
 
 def create_bare_migrator_service_instance_in_space(
-    space_id, plan_id, instance_name, domains, client
+    space_id: str,
+    plan_id: str,
+    instance_name: str,
+    domains: list[str],
+    client: CloudFoundryClient,
 ):
     logger.debug("creating service instance for space %s", space_id)
 
@@ -69,7 +75,7 @@ def create_bare_migrator_service_instance_in_space(
     return job_id
 
 
-def wait_for_job_complete(job_id, client):
+def wait_for_job_complete(job_id: str, client: CloudFoundryClient):
     logger.debug("polling job status for %s", job_id)
 
     response = client.v3.jobs.wait_for_job_completion(
@@ -85,7 +91,7 @@ def wait_for_job_complete(job_id, client):
     return response
 
 
-def wait_for_service_instance_create(job_id, client):
+def wait_for_service_instance_create(job_id, client: CloudFoundryClient):
     response = wait_for_job_complete(job_id, client)
     service_instance_link = response["links"]["service_instances"]["href"]
     service_instance_id = service_instance_link.split("/")[-1]
@@ -93,7 +99,12 @@ def wait_for_service_instance_create(job_id, client):
 
 
 def update_existing_cdn_domain_service_instance(
-    instance_id, params, client, *, new_instance_name=None, new_plan_guid=None
+    instance_id: str,
+    params: dict,
+    client: CloudFoundryClient,
+    *,
+    new_instance_name=None,
+    new_plan_guid=None,
 ):
     logger.debug("updating service instance %s", instance_id)
     update_response = client.v3.service_instances.update(
@@ -107,10 +118,27 @@ def update_existing_cdn_domain_service_instance(
     return job_id
 
 
-def purge_service_instance(instance_id, client):
+def purge_service_instance(instance_id: str, client: CloudFoundryClient):
     logger.debug("purging service instance %s", instance_id)
-    return client.v3.service_instances.remove(instance_id)
+    client.v3.service_instances.remove(instance_id)
+
+    deleted = False
+    retry_count = 0
+
+    while not deleted and retry_count < config.SERVICE_CHANGE_RETRY_COUNT:
+        try:
+            client.v3.service_instances.get(instance_id)
+        except InvalidStatusCode as e:
+            if e.body["error_code"] == "CF-ResourceNotFound":
+                deleted = True
+        retry_count += 1
+        time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)
+
+    if not deleted:
+        raise RuntimeError(
+            f"Could not verify deletion of service instance {instance_id}"
+        )
 
 
-def get_instance_data(instance_id, client):
+def get_instance_data(instance_id: str, client: CloudFoundryClient):
     return client.v3.service_instances.get(instance_id)
