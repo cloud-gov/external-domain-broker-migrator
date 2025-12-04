@@ -102,7 +102,7 @@ class Migration:
         self._space_id = None
         self._org_id = None
         self._iam_server_certificate_data = None
-        self.external_domain_broker_service_instance = None
+        self.external_domain_broker_service_instance_guid = None
 
         # get this early so we're sure we have it before we purge the instance
         self.instance_name = self.get_instance_name()
@@ -139,7 +139,10 @@ class Migration:
         cf.disable_plan_for_org(config.MIGRATION_PLAN_ID, self.org_id, self.client)
 
     def create_bare_migrator_instance_in_org_space(self):
-        logger.debug("creating bare instance for %s", self.instance_id)
+        logger.debug(
+            "creating bare migration instance for migrating legacy service %s",
+            self.instance_id,
+        )
         job_id = cf.create_bare_migrator_service_instance_in_space(
             self.space_id,
             config.MIGRATION_PLAN_ID,
@@ -149,7 +152,13 @@ class Migration:
         )
 
         guid = self.wait_for_instance_create(job_id)
-        self.external_domain_broker_service_instance = guid
+        logger.debug(
+            "created bare migration instance with GUID %s for migrating legacy service %s",
+            guid,
+            self.instance_id,
+        )
+        self.external_domain_broker_service_instance_guid = guid
+        return guid
 
     def upsert_dns(self):
         logger.debug("upserting DNS for %s", self.instance_id)
@@ -204,7 +213,7 @@ class Migration:
 
         while retries:
             status = cf.get_migrator_service_instance_status(
-                self.external_domain_broker_service_instance, self.client
+                self.external_domain_broker_service_instance_guid, self.client
             )
 
             if status == "succeeded":
@@ -235,7 +244,7 @@ class Migration:
 
     def update_instance_name(self):
         job_id = cf.update_existing_cdn_domain_service_instance(
-            self.external_domain_broker_service_instance,
+            self.external_domain_broker_service_instance_guid,
             {},
             self.client,
             new_instance_name=self.instance_name,
@@ -272,7 +281,7 @@ class CdnMigration(Migration):
         self.cloudfront_distribution_id = route.dist_id
         self._cloudfront_distribution_data = None
         self.domain_internal = route.domain_internal
-        self.external_domain_broker_service_instance = None
+        self.external_domain_broker_service_instance_guid = None
         self.hosted_zone_id = config.CLOUDFRONT_HOSTED_ZONE_ID
         self.domains = route.domain_external.split(",")
         super().__init__(route, session, client)
@@ -366,7 +375,6 @@ class CdnMigration(Migration):
                 return origin
 
     def update_existing_cdn_domain(self):
-        logger.debug("updating bare instance for %s", self.instance_id)
         params = {
             "origin": self.origin_hostname,
             "path": self.origin_path,
@@ -383,8 +391,15 @@ class CdnMigration(Migration):
             "domain_internal": self.domain_internal,
         }
 
+        logger.debug(
+            "updating bare migrator instance with guid %s to new CDN service for legacy service %s",
+            self.external_domain_broker_service_instance_guid,
+            self.instance_id,
+        )
+
+        # Update instance from
         job_id = cf.update_existing_cdn_domain_service_instance(
-            self.external_domain_broker_service_instance,
+            self.external_domain_broker_service_instance_guid,
             params,
             self.client,
             new_plan_guid=config.CDN_PLAN_ID,
@@ -402,7 +417,7 @@ class CdnMigration(Migration):
         self.mark_complete()
 
     def __repr__(self):
-        return f"<instance_name={self.instance_name}, route={self.route.instance_id}, domains={self.route.domain_external}, domain_instance={self.external_domain_broker_service_instance}, space_id={self._space_id}, org_id={self._org_id}>"
+        return f"<instance_name={self.instance_name}, route={self.route.instance_id}, domains={self.route.domain_external}, domain_instance={self.external_domain_broker_service_instance_guid}, space_id={self._space_id}, org_id={self._org_id}>"
 
     @staticmethod
     def parse_cloudfront_error_response(error_responses):
@@ -446,7 +461,7 @@ class DomainMigration(Migration):
         }
 
         job_id = cf.update_existing_cdn_domain_service_instance(
-            self.external_domain_broker_service_instance,
+            self.external_domain_broker_service_instance_guid,
             params,
             self.client,
             new_plan_guid=config.DOMAIN_PLAN_ID,
@@ -464,4 +479,4 @@ class DomainMigration(Migration):
         self.mark_complete()
 
     def __repr__(self):
-        return f"<instance_name={self.instance_name}, route={self.route.instance_id}, domains={self.route.domains}, domain_instance={self.external_domain_broker_service_instance}, space_id={self._space_id}, org_id={self._org_id}>"
+        return f"<instance_name={self.instance_name}, route={self.route.instance_id}, domains={self.route.domains}, domain_instance={self.external_domain_broker_service_instance_guid}, space_id={self._space_id}, org_id={self._org_id}>"

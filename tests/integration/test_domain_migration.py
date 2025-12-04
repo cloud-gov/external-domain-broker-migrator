@@ -75,7 +75,7 @@ def test_gets_active_cert(clean_db, domain_migration):
 def subtest_migration_instantiable(clean_db, fake_cf_client, domain_route, mocker):
     get_instance_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data",
-        return_value={"name":"my-old-domain"},
+        return_value={"name": "my-old-domain"},
     )
     migration = DomainMigration(domain_route, clean_db, fake_cf_client)
     get_instance_mock.assert_called_once_with("asdf-asdf", fake_cf_client)
@@ -100,7 +100,7 @@ def test_domain_migration_migrates(
         clean_db, fake_cf_client, domain_route, mocker
     )
 
-    assert migration.external_domain_broker_service_instance is None
+    assert migration.external_domain_broker_service_instance_guid is None
 
     # load caches so we can slim this test down.
     # We've already tested calls and lazy-loading elsewhere, so we can skip the mocks here
@@ -127,11 +127,11 @@ def test_domain_migration_migrates(
     )
     update_service_instance_mock = mocker.patch(
         "migrator.migration.cf.update_existing_cdn_domain_service_instance",
-        side_effect=["my-second-job", "my-third-job"]
+        side_effect=["my-second-job", "my-third-job"],
     )
     update_wait_mock = mocker.patch(
         "migrator.migration.cf.wait_for_job_complete",
-        return_value={}, # it's a complex object in reality, but we ignore it
+        return_value={},  # it's a complex object in reality, but we ignore it
     )
 
     disable_service_mock = mocker.patch("migrator.migration.cf.disable_plan_for_org")
@@ -183,11 +183,9 @@ def test_domain_migration_migrates(
         ]
     )
 
-    update_wait_mock.assert_has_calls([
-        call("my-second-job", fake_cf_client),
-        call("my-third-job", fake_cf_client)
-    ])
-
+    update_wait_mock.assert_has_calls(
+        [call("my-second-job", fake_cf_client), call("my-third-job", fake_cf_client)]
+    )
 
     # delete service plan visibility
     disable_service_mock.assert_called_once_with(

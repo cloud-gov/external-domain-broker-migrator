@@ -104,7 +104,6 @@ def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests, mock
     get_instance_mock.assert_called_once_with("alb-5678", fake_cf_client)
 
 
-
 def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
     dns.add_cname("_acme-challenge.www.example.com")
     dns.add_cname("www.example.com")
@@ -267,7 +266,7 @@ def test_create_bare_migrator_instance_in_org_space_success(
     migration._space_id = "my-space-guid"
     migration._org_id = "my-org-guid"
 
-    assert migration.external_domain_broker_service_instance is None
+    assert migration.external_domain_broker_service_instance_guid is None
     create_mocker = mocker.patch(
         "migrator.migration.cf.create_bare_migrator_service_instance_in_space",
         return_value="my-job",
@@ -286,7 +285,7 @@ def test_create_bare_migrator_instance_in_org_space_success(
     )
     wait_mocker.assert_called_once_with("my-job", fake_cf_client)
 
-    assert migration.external_domain_broker_service_instance == "my-instance-id"
+    assert migration.external_domain_broker_service_instance_guid == "my-instance-id"
 
 
 def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker):
@@ -298,7 +297,7 @@ def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker)
         "migrator.migration.cf.wait_for_job_complete",
         return_value={},  # the return is a complex dict, but we ignore it
     )
-    migration.external_domain_broker_service_instance = "migrator-instance-id"
+    migration.external_domain_broker_service_instance_guid = "migrator-instance-id"
     migration.update_instance_name()
     update_service_instance_mock.assert_called_once_with(
         "migrator-instance-id", {}, fake_cf_client, new_instance_name="my-old-cdn"
