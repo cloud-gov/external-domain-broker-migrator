@@ -3,6 +3,7 @@ import time
 from cloudfoundry_client.client import CloudFoundryClient
 from cloudfoundry_client.errors import InvalidStatusCode
 
+from http import HTTPStatus
 from migrator import logger
 from migrator.extensions import config
 
@@ -129,7 +130,7 @@ def purge_service_instance(instance_id: str, client: CloudFoundryClient):
         try:
             client.v3.service_instances.get(instance_id)
         except InvalidStatusCode as e:
-            if e.body["error_code"] == "CF-ResourceNotFound":
+            if e.status_code == HTTPStatus.NOT_FOUND:
                 deleted = True
         retry_count += 1
         time.sleep(config.SERVICE_CHANGE_POLL_TIME_SECONDS)

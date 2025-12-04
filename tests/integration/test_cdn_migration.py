@@ -15,8 +15,7 @@ def test_migration_init(clean_db, fake_cf_client, mocker):
     route.domain_external = "example.com,foo.example.com"
     route.dist_id = "some-distribution-id"
     get_instance_mock = mocker.patch(
-        "migrator.migration.cf.get_instance_data",
-        return_value={"name":"my-old-cdn"}
+        "migrator.migration.cf.get_instance_data", return_value={"name": "my-old-cdn"}
     )
     cdn_migration = CdnMigration(route, clean_db, fake_cf_client)
     get_instance_mock.assert_called_once_with("asdf-asdf", fake_cf_client)
@@ -179,7 +178,7 @@ def test_cloudfront_error_response_to_edb_error_response(input_, expected):
 def test_update_existing_cdn_domain(clean_db, fake_cf_client, cdn_migration, mocker):
     cdn_migration._space_id = "my-space-guid"
     cdn_migration._org_id = "my-org-guid"
-    cdn_migration.external_domain_broker_service_instance = "my-migrator-instance"
+    cdn_migration.external_domain_broker_service_instance_guid = "my-migrator-instance"
     cdn_migration._cloudfront_distribution_data = {
         "Id": "my-cloudfront-distribution",
         "ARN": "aws:arn:cloudfront:my-cloudfront-distribution",
@@ -279,7 +278,7 @@ def test_update_existing_cdn_domain_failure(
     cdn_migration.route.dist_id = "some-distribution-id"
     cdn_migration._space_id = "my-space-guid"
     cdn_migration._org_id = "my-org-guid"
-    cdn_migration.external_domain_broker_service_instance = "my-migrator-instance"
+    cdn_migration.external_domain_broker_service_instance_guid = "my-migrator-instance"
     cdn_migration._cloudfront_distribution_data = {
         "Id": "my-cloudfront-distribution",
         "ARN": "aws:arn:cloudfront:my-cloudfront-distribution",
@@ -391,7 +390,7 @@ def test_update_existing_cdn_domain_timeout_failure(
     cdn_migration.route.dist_id = "some-distribution-id"
     cdn_migration._space_id = "my-space-guid"
     cdn_migration._org_id = "my-org-guid"
-    cdn_migration.external_domain_broker_service_instance = "my-migrator-instance"
+    cdn_migration.external_domain_broker_service_instance_guid = "my-migrator-instance"
     cdn_migration._cloudfront_distribution_data = {
         "Id": "my-cloudfront-distribution",
         "ARN": "aws:arn:cloudfront:my-cloudfront-distribution",
@@ -697,8 +696,7 @@ def test_migration_migrates_happy_path(
     )
 
     update_wait_mock.assert_has_calls(
-        [call("my-second-job", fake_cf_client),
-         call("my-third-job", fake_cf_client)]
+        [call("my-second-job", fake_cf_client), call("my-third-job", fake_cf_client)]
     )
 
     # delete service plan visibility
