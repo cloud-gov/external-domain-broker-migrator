@@ -522,10 +522,13 @@ def test_migration_migrates_happy_path(
     """
     dns.add_cname("_acme-challenge.example.com")
     dns.add_cname("_acme-challenge.foo.com")
+
     route = CdnRoute()
     route.state = "provisioned"
     route.instance_id = "asdf-asdf"
     route.domain_external = "example.com,foo.com"
+    route.dist_id = "sample-distribution-id"
+
     certificate0 = CdnCertificate()
     certificate0.route = route
     certificate0.iam_server_certificate_name = "my-cert-name-0"
@@ -555,8 +558,8 @@ def test_migration_migrates_happy_path(
     migration._space_id = "my-space-id"
     migration._org_id = "my-org-id"
     migration._cloudfront_distribution_data = {
-        "Id": "my-cloudfront-distribution",
-        "ARN": "aws:arn:cloudfront:my-cloudfront-distribution",
+        "Id": "sample-distribution-id",
+        "ARN": "aws:arn:cloudfront:sample-distribution-id",
         "DistributionConfig": {
             "Origins": {
                 "Items": [
@@ -666,8 +669,8 @@ def test_migration_migrates_happy_path(
             call(
                 "my-instance-id",
                 {
-                    "cloudfront_distribution_arn": "aws:arn:cloudfront:my-cloudfront-distribution",
-                    "cloudfront_distribution_id": None,
+                    "cloudfront_distribution_arn": "aws:arn:cloudfront:sample-distribution-id",
+                    "cloudfront_distribution_id": "sample-distribution-id",
                     "domain_internal": None,
                     "error_responses": {
                         "404": "/four-oh-four",
