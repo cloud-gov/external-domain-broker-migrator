@@ -407,11 +407,17 @@ class CdnMigration(Migration):
 
         self.wait_for_instance_update(job_id)
 
+    def remove_old_instance_cdn_reference(self):
+        self.route.dist_id = None
+        self.session.commit()
+        pass
+
     def _migrate(self):
         self.enable_migration_service_plan()
         self.create_bare_migrator_instance_in_org_space()
         self.update_existing_cdn_domain()
         self.disable_migration_service_plan()
+        self.remove_old_instance_cdn_reference()
         self.purge_old_instance()
         self.update_instance_name()
         self.mark_complete()
