@@ -2,9 +2,8 @@ import datetime
 from unittest.mock import call
 
 import pytest
-from cloudfoundry_client.v3.jobs import JobTimeout
 
-from migrator.migration import find_active_instances, CdnMigration
+from migrator.migration import CdnMigration
 from migrator.models import CdnRoute, CdnCertificate
 
 
@@ -504,6 +503,26 @@ def test_update_existing_cdn_domain_timeout_failure(
     # make sure we tried the right number of times, which is
     # based on the timeout
     assert get_job_mock.call_count == 3
+
+
+def test_remove_old_instance_cdn_reference(clean_db, cdn_migration):
+    results = (
+        clean_db.query(CdnRoute)
+        .filter(CdnRoute.instance_id == cdn_migration.route.instance_id)
+        .all()
+    )
+    assert len(results) == 1
+    assert results[0].dist_id == "sample-distribution-id"
+
+    cdn_migration.remove_old_instance_cdn_reference()
+
+    results = (
+        clean_db.query(CdnRoute)
+        .filter(CdnRoute.instance_id == cdn_migration.route.instance_id)
+        .all()
+    )
+    assert len(results) == 1
+    assert results[0].dist_id == None
 
 
 def test_migration_migrates_happy_path(
