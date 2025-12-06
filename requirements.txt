@@ -108,7 +108,7 @@ typing-extensions==4.14.1
     #   marshmallow
     #   multidict
     #   sqlalchemy
-urllib3==2.5.0
+urllib3==2.6.0
     # via
     #   botocore
     #   requests
