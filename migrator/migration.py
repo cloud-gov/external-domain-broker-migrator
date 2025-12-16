@@ -405,7 +405,8 @@ class CdnMigration(Migration):
             new_plan_guid=config.CDN_PLAN_ID,
         )
 
-        self.wait_for_instance_update(job_id)
+        if job_id:
+            self.wait_for_instance_update(job_id)
 
     def remove_old_instance_cdn_reference(self):
         self.route.dist_id = None

@@ -114,8 +114,8 @@ def update_existing_cdn_domain_service_instance(
         name=new_instance_name,
         service_plan=new_plan_guid,
     )
-    job_link = update_response["links"]["job"]["href"]
-    job_id = job_link.split("/")[-1]
+    job_link = update_response.get("links", {}).get("job", {}).get("href")
+    job_id = job_link.split("/")[-1] if job_link else None
     return job_id
 
 
