@@ -66,7 +66,7 @@ def test_migration_loads_cloudfront_config(
     assert cdn_migration.iam_certificate_id == "my-cert-id-0"
 
 
-def test_migration_loads_cloudfront_config_with_no_error_reponses(
+def test_migration_loads_cloudfront_config_with_no_error_responses(
     clean_db, cloudfront, fake_cf_client, cdn_migration
 ):
     domains = ["example.gov"]
@@ -97,7 +97,7 @@ def test_migration_loads_cloudfront_config_with_no_error_reponses(
     assert cdn_migration.origin_protocol_policy == "https-only"
 
 
-def test_migration_loads_cloudfront_config_with_no_error_reponses(
+def test_migration_loads_cloudfront_config_skip_empty_items(
     clean_db, cloudfront, fake_cf_client, cdn_migration
 ):
     domains = ["example.gov"]

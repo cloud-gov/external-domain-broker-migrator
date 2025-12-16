@@ -611,6 +611,36 @@ def test_update_existing_cdn_domain_service_instance(fake_cf_client, fake_reques
     assert response == "job-id"
 
 
+def test_update_existing_cdn_domain_service_instance_no_job_link(
+    fake_cf_client, fake_requests
+):
+    def update_param_matcher(request):
+        json_ = request.json()
+        params = json_.get("parameters", {})
+        # use an assert for pytest
+        assert "param1" in params
+        # return True for requests_mock
+        return True
+
+    fake_requests.patch(
+        "http://localhost/v3/service_instances/my-migrator-instance",
+        text="",
+        additional_matcher=update_param_matcher,
+    )
+
+    cf.update_existing_cdn_domain_service_instance(
+        "my-migrator-instance",
+        {"param1": "value1"},
+        fake_cf_client,
+    )
+
+    assert fake_requests.called
+    last_request = fake_requests.request_history[-1]
+    assert (
+        last_request.url == "http://localhost/v3/service_instances/my-migrator-instance"
+    )
+
+
 def test_purge_service_instance(fake_cf_client, fake_requests: requests_mock.Mocker):
     response_body = """{
   "guid": "my-service-instance",
