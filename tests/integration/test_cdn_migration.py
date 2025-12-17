@@ -505,6 +505,105 @@ def test_update_existing_cdn_domain_timeout_failure(
     assert get_job_mock.call_count == 3
 
 
+def test_update_existing_cdn_domain_no_job_id(
+    clean_db, fake_cf_client, cdn_migration, mocker
+):
+    cdn_migration._space_id = "my-space-guid"
+    cdn_migration._org_id = "my-org-guid"
+    cdn_migration.external_domain_broker_service_instance_guid = "my-migrator-instance"
+    cdn_migration._cloudfront_distribution_data = {
+        "Id": "my-cloudfront-distribution",
+        "ARN": "aws:arn:cloudfront:my-cloudfront-distribution",
+        "DistributionConfig": {
+            "Origins": {
+                "Items": [
+                    {
+                        "Id": "my-custom-domain-id",
+                        "DomainName": "example.gov",
+                        "OriginPath": "/example-gov",
+                        "S3OriginConfig": None,
+                        "CustomOriginConfig": {"OriginProtocolPolicy": "https-only"},
+                    }
+                ]
+            },
+            "DefaultCacheBehavior": {
+                "ForwardedValues": {
+                    "QueryString": False,
+                    "Cookies": {
+                        "Forward": "whitelist",
+                        "WhitelistedNames": {
+                            "Quantity": 1,
+                            "Items": ["white-listed-name"],
+                        },
+                    },
+                    "Headers": {"Quantity": 1, "Items": ["white-listed-name-header"]},
+                }
+            },
+            "CustomErrorResponses": {
+                "Quantity": 2,
+                "Items": [
+                    {
+                        "ErrorCode": 404,
+                        "ResponsePagePath": "/four-oh-four",
+                        "ResponseCode": "404",
+                        "ErrorCachingMinTTL": 300,
+                    },
+                    {
+                        "ErrorCode": 500,
+                        "ResponsePagePath": "/five-hundred",
+                        "ResponseCode": "500",
+                        "ErrorCachingMinTTL": 300,
+                    },
+                ],
+            },
+            "ViewerCertificate": {
+                "IAMCertificateId": "my-server-cert-id",
+                "Certificate": "my-cloudfront-cert",
+            },
+        },
+    }
+
+    update_mock = mocker.patch(
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance",
+        return_value=None,
+    )
+    update_instance_wait_mock = mocker.patch(
+        "migrator.migration.cf.wait_for_job_complete",
+        return_value="my-migrator-instance",
+    )
+
+    cdn_migration.update_existing_cdn_domain()
+
+    update_mock.assert_called_once_with(
+        "my-migrator-instance",
+        {
+            "cloudfront_distribution_arn": "aws:arn:cloudfront:my-cloudfront-distribution",
+            "cloudfront_distribution_id": "sample-distribution-id",
+            "domain_internal": "example.cloudfront.net",
+            "error_responses": {
+                "404": "/four-oh-four",
+                "500": "/five-hundred",
+            },
+            "forward_cookie_policy": "whitelist",
+            "forwarded_cookies": [
+                "white-listed-name",
+            ],
+            "forwarded_headers": [
+                "white-listed-name-header",
+            ],
+            "iam_server_certificate_arn": "my-cert-arn-0",
+            "iam_server_certificate_id": "my-cert-id-0",
+            "iam_server_certificate_name": "my-cert-name-0",
+            "insecure_origin": False,
+            "origin": "example.gov",
+            "path": "/example-gov",
+        },
+        fake_cf_client,
+        new_plan_guid="FAKE-CDN-PLAN-GUID",
+    )
+    assert update_instance_wait_mock.call_count == 0
+
+
 def test_remove_old_instance_cdn_reference(clean_db, cdn_migration):
     results = (
         clean_db.query(CdnRoute)
