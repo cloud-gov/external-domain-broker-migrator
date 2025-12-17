@@ -249,7 +249,9 @@ class Migration:
             self.client,
             new_instance_name=self.instance_name,
         )
-        return self.wait_for_instance_update(job_id)
+
+        if job_id:
+            return self.wait_for_instance_update(job_id)
 
     def mark_complete(self):
         self.route.state = "migrated"

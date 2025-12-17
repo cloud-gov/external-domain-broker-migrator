@@ -306,6 +306,26 @@ def test_migration_renames_instance(clean_db, fake_cf_client, migration, mocker)
     instance_status_mock.assert_called_once_with("my-job-id", fake_cf_client)
 
 
+def test_migration_renames_instance_no_job_id(
+    clean_db, fake_cf_client, migration, mocker
+):
+    update_service_instance_mock = mocker.patch(
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance",
+        return_value=None,
+    )
+    instance_status_mock = mocker.patch(
+        "migrator.migration.cf.wait_for_job_complete",
+        return_value={},  # the return is a complex dict, but we ignore it
+    )
+    migration.external_domain_broker_service_instance_guid = "migrator-instance-id"
+    migration.update_instance_name()
+    update_service_instance_mock.assert_called_once_with(
+        "migrator-instance-id", {}, fake_cf_client, new_instance_name="my-old-cdn"
+    )
+
+    assert instance_status_mock.call_count == 0
+
+
 def test_migration_marks_route_migrated(clean_db, fake_cf_client, migration):
     migration.mark_complete()
     assert migration.route.state == "migrated"
