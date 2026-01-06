@@ -104,7 +104,7 @@ class Migration:
         self._space_id = None
         self._org_id = None
         self._iam_server_certificate_data = None
-        self.external_domain_broker_service_instance_guid = ""
+        self.external_domain_broker_service_instance_guid = None
         self.domains = []
 
         # get this early so we're sure we have it before we purge the instance
@@ -114,7 +114,7 @@ class Migration:
         instance_data = cf.get_instance_data(self.instance_id, self.client)
         return instance_data["name"]
 
-    def has_valid_dns(self, skip_site_dns_check):
+    def has_valid_dns(self, skip_site_dns_check=False):
         logger.debug("validating DNS for %s", self.instance_id)
         if not self.domains:
             return False
@@ -247,6 +247,11 @@ class Migration:
         cf.purge_service_instance(self.route.instance_id, self.client)
 
     def update_instance_name(self):
+        if not self.external_domain_broker_service_instance_guid:
+            raise Exception(
+                "Missing value for the external domain broker service instance GUID"
+            )
+
         job_id = cf.update_existing_cdn_domain_service_instance(
             self.external_domain_broker_service_instance_guid,
             {},
@@ -287,13 +292,13 @@ migration: {repr(self)}
 
 class CdnMigration(Migration):
     def __init__(self, route, session, client):
+        super().__init__(route, session, client)
         self.cloudfront_distribution_id = route.dist_id
         self._cloudfront_distribution_data = None
         self.domain_internal = route.domain_internal
         self.external_domain_broker_service_instance_guid = None
         self.hosted_zone_id = config.CLOUDFRONT_HOSTED_ZONE_ID
         self.domains = route.domain_external.split(",")
-        super().__init__(route, session, client)
 
     @property
     def current_certificate(self):
@@ -445,8 +450,8 @@ class CdnMigration(Migration):
 
 class DomainMigration(Migration):
     def __init__(self, route, session, client):
-        self.domains = route.domains
         super().__init__(route, session, client)
+        self.domains = route.domains
 
     @property
     def current_certificate(self):
