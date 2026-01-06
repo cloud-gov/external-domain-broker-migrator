@@ -32,6 +32,11 @@ def parse_args(args):
         action="store_true",
         help="Skip DNS checks for single-instance migration",
     )
+    parser.add_argument(
+        "--skip-site-dns-check",
+        action="store_true",
+        help="Skip DNS check of site domain record for single-instance migration",
+    )
     return parser.parse_args(args)
 
 
@@ -48,7 +53,11 @@ def main():
     elif args.instance:
         with session_handler() as session:
             migrate_single_instance(
-                args.instance, session, get_cf_client(config), skip_dns_check=args.force
+                args.instance,
+                session,
+                get_cf_client(config),
+                skip_dns_check=args.force,
+                skip_site_dns_check=args.skip_site_dns_check,
             )
 
 

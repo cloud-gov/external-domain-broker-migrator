@@ -79,9 +79,11 @@ def migrate_ready_instances(session, client):
     return results
 
 
-def migrate_single_instance(instance_id, session, client, skip_dns_check=False):
+def migrate_single_instance(
+    instance_id, session, client, skip_dns_check=False, skip_site_dns_check=False
+):
     migration = migration_for_instance_id(instance_id, session, client)
-    if migration.has_valid_dns or skip_dns_check:
+    if skip_dns_check or migration.has_valid_dns(skip_site_dns_check):
         try:
             migration.migrate()
         except Exception as e:
@@ -103,6 +105,7 @@ class Migration:
         self._org_id = None
         self._iam_server_certificate_data = None
         self.external_domain_broker_service_instance_guid = None
+        self.domains = []
 
         # get this early so we're sure we have it before we purge the instance
         self.instance_name = self.get_instance_name()
@@ -111,12 +114,13 @@ class Migration:
         instance_data = cf.get_instance_data(self.instance_id, self.client)
         return instance_data["name"]
 
-    @property
-    def has_valid_dns(self):
+    def has_valid_dns(self, skip_site_dns_check=False):
         logger.debug("validating DNS for %s", self.instance_id)
         if not self.domains:
             return False
-        return all([has_expected_cname(domain) for domain in self.domains])
+        return all(
+            [has_expected_cname(domain, skip_site_dns_check) for domain in self.domains]
+        )
 
     @property
     def space_id(self):
@@ -243,6 +247,11 @@ class Migration:
         cf.purge_service_instance(self.route.instance_id, self.client)
 
     def update_instance_name(self):
+        if not self.external_domain_broker_service_instance_guid:
+            raise Exception(
+                "Missing value for the external domain broker service instance GUID"
+            )
+
         job_id = cf.update_existing_cdn_domain_service_instance(
             self.external_domain_broker_service_instance_guid,
             {},
@@ -256,6 +265,9 @@ class Migration:
     def mark_complete(self):
         self.route.state = "migrated"
         self.session.commit()
+
+    def _migrate(self):
+        pass
 
     def migrate(self):
         try:
@@ -280,13 +292,13 @@ migration: {repr(self)}
 
 class CdnMigration(Migration):
     def __init__(self, route, session, client):
+        super().__init__(route, session, client)
         self.cloudfront_distribution_id = route.dist_id
         self._cloudfront_distribution_data = None
         self.domain_internal = route.domain_internal
         self.external_domain_broker_service_instance_guid = None
         self.hosted_zone_id = config.CLOUDFRONT_HOSTED_ZONE_ID
         self.domains = route.domain_external.split(",")
-        super().__init__(route, session, client)
 
     @property
     def current_certificate(self):
@@ -438,8 +450,8 @@ class CdnMigration(Migration):
 
 class DomainMigration(Migration):
     def __init__(self, route, session, client):
-        self.domains = route.domains
         super().__init__(route, session, client)
+        self.domains = route.domains
 
     @property
     def current_certificate(self):

@@ -2,7 +2,7 @@ from unittest import mock
 
 from dns.exception import Timeout
 
-from migrator.dns import get_cname, get_txt, has_expected_semaphore
+from migrator.dns import get_cname, get_txt, has_expected_semaphore, has_expected_cname
 from migrator.extensions import config
 
 
@@ -37,7 +37,7 @@ def test_dns_finds_semaphore_with_multiple_txt_records(dns):
     assert has_expected_semaphore("example.com")
 
 
-def test_has_expected_cname_returns_false_on_exception(dns):
+def test_has_expected_cname_returns_false_on_timeout(dns):
     m = mock.MagicMock()
     m.side_effect = Timeout
     with mock.patch("migrator.dns._resolver.resolve", new=m):
@@ -54,3 +54,37 @@ def test_has_expected_cname_returns_false_on_exception(dns):
     m.side_effect = MyException
     with mock.patch("migrator.dns._resolver.resolve", new=m):
         assert not has_expected_semaphore("example.com")
+
+
+def test_has_expected_cname(dns):
+    dns.add_cname("testcname.example.com.", "testcname.example.com.domains.cloud.test")
+    dns.add_cname(
+        "_acme-challenge.testcname.example.com.",
+        "_acme-challenge.testcname.example.com.domains.cloud.test",
+    )
+    assert has_expected_cname("testcname.example.com", False) == True
+
+
+def test_missing_acme_challenge_expected_cname(dns):
+    dns.add_cname("testcname.example.com.", "testcname.example.com.domains.cloud.test")
+    assert has_expected_cname("testcname.example.com", False) == False
+
+
+def test_missing_site_expected_cname(dns):
+    dns.add_cname(
+        "_acme-challenge.testcname.example.com.",
+        "_acme-challenge.testcname.example.com.domains.cloud.test",
+    )
+    assert has_expected_cname("testcname.example.com", False) == False
+
+
+def test_skip_expected_site_cname(dns):
+    dns.add_cname(
+        "_acme-challenge.testcname.example.com.",
+        "_acme-challenge.testcname.example.com.domains.cloud.test",
+    )
+    assert has_expected_cname("testcname.example.com", True) == True
+
+
+def test_skip_expected_site_cname_missing_acme_challenge(dns):
+    assert has_expected_cname("testcname.example.com", True) == False
