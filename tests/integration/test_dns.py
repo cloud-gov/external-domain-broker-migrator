@@ -84,3 +84,7 @@ def test_skip_expected_site_cname(dns):
         "_acme-challenge.testcname.example.com.domains.cloud.test",
     )
     assert has_expected_cname("testcname.example.com", True) == True
+
+
+def test_skip_expected_site_cname_missing_acme_challenge(dns):
+    assert has_expected_cname("testcname.example.com", True) == False
