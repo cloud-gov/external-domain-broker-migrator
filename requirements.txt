@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.12.14
+aiohttp==3.13.3
     # via cloudfoundry-client
 aiosignal==1.4.0
     # via aiohttp
@@ -48,7 +48,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-marshmallow==4.1.2
+marshmallow==4.2.0
     # via environs
 multidict==6.6.3
     # via
