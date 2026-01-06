@@ -66,11 +66,11 @@ def acme_challenge_cname_name(domain: str) -> str:
     return f"_acme-challenge.{domain}"
 
 
-def has_expected_cname(domain: str) -> bool:
+def has_expected_cname(domain: str, skip_site_dns_check: bool) -> bool:
     acme_good = get_cname(
         acme_challenge_cname_name(domain)
     ) == acme_challenge_cname_target(domain)
-    site_good = get_cname(domain) == site_cname_target(domain)
+    site_good = skip_site_dns_check or get_cname(domain) == site_cname_target(domain)
     return acme_good and site_good
 
 

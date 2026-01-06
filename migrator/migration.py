@@ -79,9 +79,11 @@ def migrate_ready_instances(session, client):
     return results
 
 
-def migrate_single_instance(instance_id, session, client, skip_dns_check=False):
+def migrate_single_instance(
+    instance_id, session, client, skip_dns_check=False, skip_site_dns_check=False
+):
     migration = migration_for_instance_id(instance_id, session, client)
-    if migration.has_valid_dns or skip_dns_check:
+    if skip_dns_check or migration.has_valid_dns(skip_site_dns_check):
         try:
             migration.migrate()
         except Exception as e:
@@ -102,7 +104,8 @@ class Migration:
         self._space_id = None
         self._org_id = None
         self._iam_server_certificate_data = None
-        self.external_domain_broker_service_instance_guid = None
+        self.external_domain_broker_service_instance_guid = ""
+        self.domains = []
 
         # get this early so we're sure we have it before we purge the instance
         self.instance_name = self.get_instance_name()
@@ -111,12 +114,13 @@ class Migration:
         instance_data = cf.get_instance_data(self.instance_id, self.client)
         return instance_data["name"]
 
-    @property
-    def has_valid_dns(self):
+    def has_valid_dns(self, skip_site_dns_check):
         logger.debug("validating DNS for %s", self.instance_id)
         if not self.domains:
             return False
-        return all([has_expected_cname(domain) for domain in self.domains])
+        return all(
+            [has_expected_cname(domain, skip_site_dns_check) for domain in self.domains]
+        )
 
     @property
     def space_id(self):
@@ -256,6 +260,9 @@ class Migration:
     def mark_complete(self):
         self.route.state = "migrated"
         self.session.commit()
+
+    def _migrate(self):
+        pass
 
     def migrate(self):
         try:
