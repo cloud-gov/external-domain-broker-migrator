@@ -67,7 +67,7 @@ def find_migrations(session, client):
 def migrate_ready_instances(session, client):
     results = dict(migrated=[], skipped=[], failed=[])
     for migration in find_migrations(session, client):
-        if migration.has_valid_dns:
+        if migration.has_valid_dns():
             try:
                 migration.migrate()
             except Exception as e:
