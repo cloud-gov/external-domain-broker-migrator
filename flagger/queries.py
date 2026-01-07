@@ -8,7 +8,7 @@ from migrator.migration import (
 
 # Extract a list of domain names from all CdnRoutes.
 def find_domains(session):
-    routes = find_active_instances(session)
+    routes = find_active_instances(session, False)
     domains = []
     for route in routes:
         domains.extend(route.domain_external_list())
@@ -16,7 +16,7 @@ def find_domains(session):
 
 
 def find_cdn_aliases(session):
-    routes = find_active_cdn_instances(session)
+    routes = find_active_cdn_instances(session, False)
     domain_cdns = []
     for route in routes:
         for domain in route.domain_external_list():
@@ -25,7 +25,7 @@ def find_cdn_aliases(session):
 
 
 def find_domain_aliases(session):
-    routes = find_active_domain_instances(session)
+    routes = find_active_domain_instances(session, False)
     domain_albs = []
     for route in routes:
         for domain in route.domain_external_list():

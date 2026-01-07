@@ -15,24 +15,30 @@ from migrator.models import CdnRoute, DomainRoute
 from migrator.smtp import send_email
 
 
-def find_active_instances(session):
-    cdn_routes = find_active_cdn_instances(session)
-    domain_routes = find_active_domain_instances(session)
+def find_active_instances(session, migrate_failed):
+    cdn_routes = find_active_cdn_instances(session, migrate_failed)
+    domain_routes = find_active_domain_instances(session, migrate_failed)
     routes = [*cdn_routes, *domain_routes]
     return routes
 
 
-def find_active_cdn_instances(session):
+def find_active_cdn_instances(session, migrate_failed):
+    extra_or_conditions = []
+    if migrate_failed:
+        extra_or_conditions.append(CdnRoute.state == "migration_failed")
     cdn_query = session.query(CdnRoute).filter(
-        or_(CdnRoute.state == "provisioned", CdnRoute.state == "migration_failed")
+        or_(CdnRoute.state == "provisioned", *extra_or_conditions)
     )
     cdn_routes = cdn_query.all()
     return cdn_routes
 
 
-def find_active_domain_instances(session):
+def find_active_domain_instances(session, migrate_failed):
+    extra_or_conditions = []
+    if migrate_failed:
+        extra_or_conditions.append(DomainRoute.state == "migration_failed")
     domain_query = session.query(DomainRoute).filter(
-        or_(DomainRoute.state == "provisioned", DomainRoute.state == "migration_failed")
+        or_(DomainRoute.state == "provisioned", *extra_or_conditions)
     )
     domain_routes = domain_query.all()
     return domain_routes
@@ -44,16 +50,16 @@ def migration_for_route(route, session, client):
     return DomainMigration(route, session, client)
 
 
-def migration_for_instance_id(instance_id, session, client):
-    instances = find_active_instances(session)
+def migration_for_instance_id(instance_id, session, client, migrate_failed):
+    instances = find_active_instances(session, migrate_failed)
     filtered = filter(lambda x: x.instance_id == instance_id, instances)
     instance = list(filtered)[0]
     return migration_for_route(instance, session, client)
 
 
-def find_migrations(session, client):
+def find_migrations(session, client, migrate_failed):
     migrations = []
-    for route in find_active_instances(session):
+    for route in find_active_instances(session, migrate_failed):
         try:
             migration = migration_for_route(route, session, client)
             migrations.append(migration)
@@ -64,9 +70,9 @@ def find_migrations(session, client):
     return migrations
 
 
-def migrate_ready_instances(session, client):
+def migrate_ready_instances(session, client, migrate_failed=False):
     results = dict(migrated=[], skipped=[], failed=[])
-    for migration in find_migrations(session, client):
+    for migration in find_migrations(session, client, migrate_failed):
         if migration.has_valid_dns():
             try:
                 migration.migrate()
@@ -85,7 +91,12 @@ def migrate_ready_instances(session, client):
 
 
 def migrate_single_instance(
-    instance_id, session, client, skip_dns_check=False, skip_site_dns_check=False
+    instance_id,
+    session,
+    client,
+    skip_dns_check=False,
+    skip_site_dns_check=False,
+    migrate_failed=False,
 ):
     migration = migration_for_instance_id(instance_id, session, client)
     if skip_dns_check or migration.has_valid_dns(skip_site_dns_check):
