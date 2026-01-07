@@ -255,7 +255,7 @@ def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
     dns.add_cname("_acme-challenge.www.example.com")
     dns.add_cname("www.example.com")
     migration.domains = ["www.example.com"]
-    assert migration.has_valid_dns
+    assert migration.has_valid_dns()
 
 
 def test_validate_bad_dns(clean_db, dns, fake_cf_client, migration):
