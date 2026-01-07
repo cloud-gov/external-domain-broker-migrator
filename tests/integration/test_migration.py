@@ -38,6 +38,25 @@ def test_find_instances(clean_db):
     assert instances[1].state == "provisioned"
 
 
+def test_find_cdn_instances_migration_failed(clean_db):
+    states = ["migration_failed"]
+    for state in states:
+        domain_route = DomainRoute()
+        domain_route.state = state
+        domain_route.instance_id = f"id-{state}"
+        cdn_route = CdnRoute()
+        cdn_route.state = state
+        cdn_route.instance_id = f"id-{state}"
+        clean_db.add(domain_route)
+        clean_db.add(cdn_route)
+    clean_db.commit()
+    clean_db.close()
+    instances = find_active_instances(clean_db)
+    assert len(instances) == 2
+    assert instances[0].state == "migration_failed"
+    assert instances[1].state == "migration_failed"
+
+
 def test_get_migrations(clean_db, fake_cf_client, mocker):
     good_result = dict(name="my-old-cdn")
     bad_result = InvalidStatusCode("404", "not here")

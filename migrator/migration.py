@@ -2,6 +2,7 @@ import time
 
 from cloudfoundry_client.errors import InvalidStatusCode
 from cloudfoundry_client.v3.jobs import JobTimeout
+from sqlalchemy import or_
 
 from migrator import cf, logger
 from migrator.dns import has_expected_cname
@@ -22,13 +23,17 @@ def find_active_instances(session):
 
 
 def find_active_cdn_instances(session):
-    cdn_query = session.query(CdnRoute).filter(CdnRoute.state == "provisioned")
+    cdn_query = session.query(CdnRoute).filter(
+        or_(CdnRoute.state == "provisioned", CdnRoute.state == "migration_failed")
+    )
     cdn_routes = cdn_query.all()
     return cdn_routes
 
 
 def find_active_domain_instances(session):
-    domain_query = session.query(DomainRoute).filter(DomainRoute.state == "provisioned")
+    domain_query = session.query(DomainRoute).filter(
+        or_(DomainRoute.state == "provisioned", DomainRoute.state == "migration_failed")
+    )
     domain_routes = domain_query.all()
     return domain_routes
 
