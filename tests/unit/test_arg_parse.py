@@ -13,7 +13,6 @@ def test_arg_parse_returns_cron_for_cron():
     assert parsed.cron
     assert not parsed.instance
     assert not parsed.skip_site_dns_check
-    assert not parsed.migrate_failed
 
 
 def test_arg_parse_returns_instance_for_instance_and_not_forced():
@@ -44,8 +43,7 @@ def test_arg_parse_skip_site_dns_check():
 
 
 def test_arg_parse_skip_migrate_failed():
-    parsed = parse_args(["--instance", "asdf-asdf", "--migrate-failed"])
+    parsed = parse_args(["--instance", "asdf-asdf"])
     assert parsed.instance == "asdf-asdf"
     assert not parsed.cron
     assert not parsed.force
-    assert parsed.migrate_failed

@@ -30,29 +30,10 @@ def test_find_instances(clean_db):
         clean_db.add(cdn_route)
     clean_db.commit()
     clean_db.close()
-    instances = find_active_instances(clean_db, False)
+    instances = find_active_instances(clean_db)
     assert len(instances) == 2
     assert instances[0].state == "provisioned"
     assert instances[1].state == "provisioned"
-
-
-def test_find_cdn_instances_migration_failed(clean_db):
-    states = ["migration_failed"]
-    for state in states:
-        domain_route = DomainRoute()
-        domain_route.state = state
-        domain_route.instance_id = f"id-{state}"
-        cdn_route = CdnRoute()
-        cdn_route.state = state
-        cdn_route.instance_id = f"id-{state}"
-        clean_db.add(domain_route)
-        clean_db.add(cdn_route)
-    clean_db.commit()
-    clean_db.close()
-    instances = find_active_instances(clean_db, True)
-    assert len(instances) == 2
-    assert instances[0].state == "migration_failed"
-    assert instances[1].state == "migration_failed"
 
 
 def test_get_migrations(clean_db, fake_cf_client, mocker):
@@ -74,11 +55,11 @@ def test_get_migrations(clean_db, fake_cf_client, mocker):
     cdn_route0.instance_id = "cdn-1234"
     cdn_route0.domain_external = "blah"
     cdn_route1 = CdnRoute()
-    cdn_route1.state = "migration_failed"
+    cdn_route1.state = "provisioned"
     cdn_route1.instance_id = "cdn-5678"
     cdn_route1.domain_external = "blah"
     bad_route0 = CdnRoute()
-    bad_route0.state = "migration_failed"
+    bad_route0.state = "provisioned"
     bad_route0.instance_id = "bad-404"
     bad_route0.domain_external = "blah"
     clean_db.add(domain_route0)
@@ -87,7 +68,7 @@ def test_get_migrations(clean_db, fake_cf_client, mocker):
     clean_db.add(cdn_route1)
     clean_db.add(bad_route0)
     clean_db.commit()
-    migrations = find_migrations(clean_db, fake_cf_client, True)
+    migrations = find_migrations(clean_db, fake_cf_client)
     assert len(migrations) == 4
     assert get_instance_mock.call_count == 5
 
@@ -272,7 +253,7 @@ def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests, mock
     clean_db.add(cdn_route0)
     clean_db.add(cdn_route1)
     clean_db.commit()
-    migration = migration_for_instance_id("alb-5678", clean_db, fake_cf_client, False)
+    migration = migration_for_instance_id("alb-5678", clean_db, fake_cf_client)
     assert isinstance(migration, DomainMigration)
     assert migration.route.instance_id == "alb-5678"
     get_instance_mock.assert_called_once_with("alb-5678", fake_cf_client)

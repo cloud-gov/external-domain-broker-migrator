@@ -10,11 +10,9 @@ from migrator.cf import get_cf_client
 from migrator.smtp import send_report_email
 
 
-def run_and_report(migrate_failed):
+def run_and_report():
     with session_handler() as session:
-        results = migrate_ready_instances(
-            session, get_cf_client(config), migrate_failed
-        )
+        results = migrate_ready_instances(session, get_cf_client(config))
     send_report_email(results)
 
 
@@ -39,11 +37,6 @@ def parse_args(args):
         action="store_true",
         help="Skip DNS check of site domain record for single-instance migration",
     )
-    parser.add_argument(
-        "--migrate-failed",
-        action="store_true",
-        help="Re-attempt migration of previously failed records",
-    )
     return parser.parse_args(args)
 
 
@@ -51,15 +44,9 @@ def main():
     args = parse_args(sys.argv[1:])
     check_connections()
     if args.cron:
-        schedule.every().tuesday.at(config.MIGRATION_TIME).do(
-            run_and_report, migrate_failed=args.migrate_failed
-        )
-        schedule.every().wednesday.at(config.MIGRATION_TIME).do(
-            run_and_report, migrate_failed=args.migrate_failed
-        )
-        schedule.every().thursday.at(config.MIGRATION_TIME).do(
-            run_and_report, migrate_failed=args.migrate_failed
-        )
+        schedule.every().tuesday.at(config.MIGRATION_TIME).do(run_and_report)
+        schedule.every().wednesday.at(config.MIGRATION_TIME).do(run_and_report)
+        schedule.every().thursday.at(config.MIGRATION_TIME).do(run_and_report)
         while True:
             time.sleep(1)
             schedule.run_pending()
@@ -71,7 +58,6 @@ def main():
                 get_cf_client(config),
                 skip_dns_check=args.force,
                 skip_site_dns_check=args.skip_site_dns_check,
-                migrate_failed=args.migrate_failed,
             )
 
 
