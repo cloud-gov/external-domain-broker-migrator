@@ -1,17 +1,15 @@
 import datetime
-
-import pytest
+from http import HTTPStatus
 from cloudfoundry_client.errors import InvalidStatusCode
 
 from migrator.migration import (
-    CdnMigration,
     DomainMigration,
-    Migration,
     find_active_instances,
     find_migrations,
     migration_for_instance_id,
+    migrate_ready_instances,
 )
-from migrator.models import CdnRoute, DomainRoute
+from migrator.models import CdnRoute, DomainRoute, CdnCertificate
 
 
 def test_find_instances(clean_db):
@@ -40,7 +38,7 @@ def test_find_instances(clean_db):
 
 def test_get_migrations(clean_db, fake_cf_client, mocker):
     good_result = dict(name="my-old-cdn")
-    bad_result = InvalidStatusCode("404", "not here")
+    bad_result = InvalidStatusCode(HTTPStatus.NOT_FOUND, "not here")
     get_instance_mock = mocker.patch(
         "migrator.migration.cf.get_instance_data",
         side_effect=[good_result, good_result, good_result, good_result, bad_result],
@@ -73,6 +71,163 @@ def test_get_migrations(clean_db, fake_cf_client, mocker):
     migrations = find_migrations(clean_db, fake_cf_client)
     assert len(migrations) == 4
     assert get_instance_mock.call_count == 5
+
+
+def test_migrate_ready_instances_skips_invalid_dns(
+    clean_db, fake_cf_client, dns, mocker, cloudfront
+):
+    dns.add_cname("_acme-challenge.www.example.com")
+
+    instance_name_data = dict(name="my-old-cdn")
+    get_instance_mock = mocker.patch(
+        "migrator.migration.cf.get_instance_data",
+        side_effect=[instance_name_data],
+    )
+
+    cdn_route0 = CdnRoute()
+    cdn_route0.state = "provisioned"
+    cdn_route0.instance_id = "cdn-1234"
+    cdn_route0.domain_external = "www.example.com"
+    cdn_route0.dist_id = "sample-distribution-id"
+
+    clean_db.add_all([cdn_route0])
+    clean_db.commit()
+
+    results = migrate_ready_instances(clean_db, fake_cf_client)
+
+    get_instance_mock.assert_called_once_with("cdn-1234", fake_cf_client)
+    assert results == {"migrated": [], "skipped": ["cdn-1234"], "failed": []}
+
+
+def test_migrate_ready_instances_service_does_not_exist(
+    clean_db, fake_cf_client, mocker
+):
+    bad_result = InvalidStatusCode(HTTPStatus.NOT_FOUND, "not here")
+    get_instance_mock = mocker.patch(
+        "migrator.migration.cf.get_instance_data",
+        side_effect=[bad_result],
+    )
+
+    cdn_route0 = CdnRoute()
+    cdn_route0.state = "provisioned"
+    cdn_route0.instance_id = "cdn-1234"
+    cdn_route0.domain_external = "www.example.com"
+    cdn_route0.dist_id = "sample-distribution-id"
+
+    clean_db.add_all([cdn_route0])
+    clean_db.commit()
+
+    results = migrate_ready_instances(clean_db, fake_cf_client)
+
+    get_instance_mock.assert_called_once_with("cdn-1234", fake_cf_client)
+    # code fails before it even attempts migration, so instances are not included
+    # in "failed"
+    assert results == {"migrated": [], "skipped": [], "failed": []}
+
+
+def test_migrate_ready_instances_success(
+    clean_db, fake_cf_client, dns, mocker, cloudfront
+):
+    dns.add_cname("_acme-challenge.www.example.com")
+    dns.add_cname("www.example.com.", "www.example.com.domains.cloud.test")
+
+    instance_name_data = dict(name="my-old-cdn")
+    get_instance_mock = mocker.patch(
+        "migrator.migration.cf.get_instance_data",
+        side_effect=[instance_name_data],
+    )
+    get_space_id_mock = mocker.patch(
+        "migrator.migration.cf.get_space_id_for_service_instance_id",
+        side_effect=["space-1"],
+    )
+    get_org_id_mock = mocker.patch(
+        "migrator.migration.cf.get_org_id_for_space_id",
+        side_effect=["org-1"],
+    )
+    enable_plan_for_org_mock = mocker.patch(
+        "migrator.migration.cf.enable_plan_for_org",
+        side_effect=[{}],
+    )
+    create_migrator_service_mock = mocker.patch(
+        "migrator.migration.cf.create_bare_migrator_service_instance_in_space",
+        side_effect=["job-1"],
+    )
+    create_wait_mock = mocker.patch(
+        "migrator.migration.cf.wait_for_service_instance_create",
+        return_value="my-instance-id",
+    )
+    update_service_instance_mock = mocker.patch(
+        "migrator.migration.cf.update_existing_cdn_domain_service_instance",
+        side_effect=["my-second-job", "my-third-job"],
+    )
+    mocker.patch(
+        "migrator.migration.cf.wait_for_job_complete",
+        return_value={},  # it's a complex object in reality, but we ignore it
+    )
+    disable_service_mock = mocker.patch("migrator.migration.cf.disable_plan_for_org")
+    purge_service_instance_mock = mocker.patch(
+        "migrator.migration.cf.purge_service_instance"
+    )
+
+    cloudfront.expect_get_distribution(
+        caller_reference="asdf",
+        domains=["www.example.com"],
+        certificate_id="mycertificateid",
+        origin_hostname="cloud.test",
+        origin_path="",
+        distribution_id="sample-distribution-id",
+        status="active",
+        custom_error_responses={
+            "Quantity": 1,
+            "Items": [
+                {
+                    "ErrorCode": 400,
+                    "ResponsePagePath": "/errors/400.html",
+                    "ResponseCode": "400",
+                }
+            ],
+        },
+    )
+
+    cdn_route0 = CdnRoute()
+    cdn_route0.state = "provisioned"
+    cdn_route0.instance_id = "cdn-1234"
+    cdn_route0.domain_external = "www.example.com"
+    cdn_route0.dist_id = "sample-distribution-id"
+
+    certificate0 = CdnCertificate()
+    certificate0.route = cdn_route0
+    certificate0.iam_server_certificate_name = "my-cert-name-0"
+    certificate0.iam_server_certificate_arn = "my-cert-arn-0"
+    certificate0.iam_server_certificate_id = "my-cert-id-0"
+    certificate0.expires = datetime.datetime.now() + datetime.timedelta(days=1)
+
+    clean_db.add_all([cdn_route0, certificate0])
+    clean_db.commit()
+
+    results = migrate_ready_instances(clean_db, fake_cf_client)
+
+    get_instance_mock.assert_called_once_with("cdn-1234", fake_cf_client)
+    get_space_id_mock.assert_called_once_with("cdn-1234", fake_cf_client)
+    get_org_id_mock.assert_called_once_with("space-1", fake_cf_client)
+    enable_plan_for_org_mock.assert_called_once_with(
+        "FAKE-MIGRATION-PLAN-GUID", "org-1", fake_cf_client
+    )
+    create_migrator_service_mock.assert_called_once_with(
+        "space-1",
+        "FAKE-MIGRATION-PLAN-GUID",
+        "migrating-instance-my-old-cdn",
+        ["www.example.com"],
+        fake_cf_client,
+    )
+    create_wait_mock.assert_called_once_with("job-1", fake_cf_client)
+    assert update_service_instance_mock.call_count == 2
+    disable_service_mock.assert_called_once_with(
+        "FAKE-MIGRATION-PLAN-GUID", "org-1", fake_cf_client
+    )
+    purge_service_instance_mock.assert_called_once_with("cdn-1234", fake_cf_client)
+
+    assert results == {"migrated": ["cdn-1234"], "skipped": [], "failed": []}
 
 
 def test_migration_for_instance_id(clean_db, fake_cf_client, fake_requests, mocker):
@@ -108,7 +263,7 @@ def test_validate_good_dns(clean_db, dns, fake_cf_client, migration):
     dns.add_cname("_acme-challenge.www.example.com")
     dns.add_cname("www.example.com")
     migration.domains = ["www.example.com"]
-    assert migration.has_valid_dns
+    assert migration.has_valid_dns()
 
 
 def test_validate_bad_dns(clean_db, dns, fake_cf_client, migration):
